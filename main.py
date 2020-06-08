@@ -487,13 +487,8 @@ def write_json_data(data):
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 if not isfile("data.json"):
-    with open("data.json", "w") as file:
-        json.dump({
-            "pleasures": [],
-            "schedule": [],
-            "work_blocks": [],
-            "routines": {}
-            }, file, indent=4)        
+    write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [],"routines": {}})
+    
 Main()
 
 # TODO Архитектура. Или печатаешь, или возвращаешь
