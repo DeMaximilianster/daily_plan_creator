@@ -3,7 +3,7 @@ from openpyxl import load_workbook
 import datetime
 import json
 import tkinter as tk
-
+from os.path import isfile
 
 class Main:
 
@@ -486,7 +486,14 @@ def write_json_data(data):
     with open('data.json', 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-
+if not isfile("data.json"):
+    with open("data.json", "w") as file:
+        json.dump({
+            "pleasures": [],
+            "schedule": [],
+            "work_blocks": [],
+            "routines": {}
+            }, file, indent=4)        
 Main()
 
 # TODO Архитектура. Или печатаешь, или возвращаешь
