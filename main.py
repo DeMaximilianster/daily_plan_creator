@@ -1,15 +1,20 @@
+"""Program for creating flexible schedules"""
+
 from random import randint, choice, shuffle
-from openpyxl import load_workbook
 import datetime
 import json
 import tkinter as tk
 from os.path import isfile
+from openpyxl import load_workbook
+
 
 class Main:
+    """Main window of program"""
 
     def __init__(self):
         self.main_window = tk.Tk()
-        self.pleasures_frame = self.__create_pleasures_frame()  # TODO Updating probability of pleasure while clicking
+        self.pleasures_frame = self.__create_pleasures_frame()
+        # TODO Updating probability of pleasure while clicking
         self.schedule_frame = self.__create_schedule_frame()
         self.routines_frame = self.__create_routines_frame()
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
@@ -18,6 +23,7 @@ class Main:
         self.main_window.mainloop()
 
     def __create_pleasures_frame(self):
+        """Create pleasures frame"""
         pleasures_frame = tk.LabelFrame(self.main_window, text="Удовольствия")
         pleasures_dictionary = get_pleasures()
         for pleasure in pleasures_dictionary:
@@ -28,6 +34,7 @@ class Main:
         return pleasures_frame
 
     def __create_schedule_frame(self):
+        """Create schedule frame"""
         schedule_frame = tk.LabelFrame(self.main_window, text="Расписание")
         schedule_list = get_schedule() + get_work_blocks()
         schedule_list.sort(key=lambda x: x['start'])
@@ -46,24 +53,29 @@ class Main:
         return schedule_frame
 
     def update_schedule_frame(self):
+        """Update schedule frame"""
         self.schedule_frame.destroy()
         self.schedule_frame = self.__create_schedule_frame()
 
     def __create_routines_frame(self):
+        """Create routines frame"""
         routines_frame = tk.LabelFrame(self.main_window, text="Дела")
         routines_dict = get_routines()
         for routine in routines_dict.keys():
             Routine(routines_frame, routines_dict[routine]).pack()
-        add_routine = tk.Button(routines_frame, text="Добавить дело", command=lambda: RoutineGetter(self).pack())
+        add_routine = tk.Button(routines_frame, text="Добавить дело",
+                                command=lambda: RoutineGetter(self).pack())
         routines_frame.pack(side=tk.LEFT)
         add_routine.pack()
         return routines_frame
 
     def update_routines_frame(self):
+        """Update routines frame"""
         self.routines_frame.destroy()
         self.routines_frame = self.__create_routines_frame()
 
     def __make_schedule(self):
+        """Make a schedule based on options"""
         # TODO each press of "GO" button creates new textbox
         textbox = tk.Text(self.main_window)
         textbox.pack()
@@ -105,7 +117,8 @@ class Main:
                     if paragraph['duration'] == 0:
                         textbox.insert(tk.END, "{} {}\n".format(start_str, name))
                     else:
-                        start_minute += paragraph['duration']  # we created start_str so we can change start_minute
+                        # we created start_str so we can change start_minute
+                        start_minute += paragraph['duration']
                         end_str = minutes_to_time(start_minute)
                         textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
 
@@ -117,15 +130,12 @@ class Main:
                     textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
                 else:
                     textbox.insert(tk.END, "{} {}\n".format(start_str, name))
-
-        print(routines)
-        print(work_blocks)
-        # TODO напечатать расписание
     # TODO print forbidden pleasures
     # TODO print things to do
 
 
 class Routine:
+    """Some thing that sometimes should be done, like sports or cleaning"""
 
     def __init__(self, master, dictionary):
         self.dictionary = dictionary
@@ -137,6 +147,7 @@ class Routine:
         self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
 
     def pack(self):
+        """Pack routine"""
         self.frame.pack()
         for check_button in self.check_buttons:
             check_button.pack(side=tk.LEFT)
@@ -144,6 +155,7 @@ class Routine:
         self.delete_button.pack(side=tk.LEFT)
 
     def destroy(self):
+        """Delete routine"""
         data = get_json_data()
         data['routines'].remove(self.dictionary)
         write_json_data(data)
@@ -151,18 +163,23 @@ class Routine:
 
 
 class IndexCheckbutton:
+    """Upgraded checkbutton which has its index"""
 
     def __init__(self, index, master: Routine):
         self.master = master
         self.index = index
-        self.variable = tk.BooleanVar(master.frame, value=index in master.dictionary['active_work_blocks'])
-        self.check_button = tk.Checkbutton(master.frame, variable=self.variable, onvalue=1, offvalue=0,
+        self.variable = tk.BooleanVar(master.frame,
+                                      value=index in master.dictionary['active_work_blocks'])
+        self.check_button = tk.Checkbutton(master.frame,
+                                           variable=self.variable, onvalue=1, offvalue=0,
                                            command=self.change_state)
 
     def pack(self, side):
+        """Pack checkbutton"""
         self.check_button.pack(side=side)
 
     def change_state(self):
+        """Trigger for clicking checkbutton"""
         data = get_json_data()
         name = self.master.dictionary['name']
         if self.variable.get():
@@ -173,6 +190,7 @@ class IndexCheckbutton:
 
 
 class Pleasure:
+    """Pleasure which can be forbidden for the sake of dopamine quality"""
 
     def __init__(self, master, text, probability):
         self.frame = tk.Frame(master)
@@ -181,24 +199,30 @@ class Pleasure:
         self.entry.insert(tk.END, probability)
 
     def increase_probability(self):
+        """Increase probability of pleasure allowance"""
         probability = int(self.entry.get())
         self.entry.delete(0, tk.END)
         self.entry.insert(tk.END, probability + 1)
 
     def decrease_probability(self):
+        """Decrease probability of pleasure allowance"""
         probability = int(self.entry.get())
         self.entry.delete(0, tk.END)
         self.entry.insert(tk.END, probability - 1)
 
     def pack(self):
+        """Pack a pleasure"""
         self.frame.pack(anchor=tk.E)
         self.label.pack(side=tk.LEFT)
         self.entry.pack(side=tk.LEFT)
-        tk.Button(self.frame, text='+', width=1, height=1, command=self.increase_probability).pack(side=tk.LEFT)
-        tk.Button(self.frame, text='-', width=1, height=1, command=self.decrease_probability).pack(side=tk.LEFT)
+        tk.Button(self.frame, text='+', width=1, height=1,
+                  command=self.increase_probability).pack(side=tk.LEFT)
+        tk.Button(self.frame, text='-', width=1, height=1,
+                  command=self.decrease_probability).pack(side=tk.LEFT)
 
 
 class Paragraph:
+    """Paragraph of schedule"""
 
     def __init__(self, master, dictionary):
         self.frame = tk.Frame(master)
@@ -207,7 +231,8 @@ class Paragraph:
         self.label = tk.Label(self.frame, text=self.text)
         self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
 
-    def __get_string(self):
+    def __get_string(self) -> str:
+        """Get string with paragraph info"""
         name = self.dictionary['name']
         start_time = self.dictionary['start']
         start_str = minutes_to_time(start_time)
@@ -218,11 +243,13 @@ class Paragraph:
         return "{} {}".format(start_str, name)
 
     def pack(self):
+        """Pack paragraph"""
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.delete_button.pack(side=tk.RIGHT)
 
     def destroy(self):
+        """Destroy paragraph"""
         data = get_json_data()
         data['schedule'].remove(self.dictionary)
         write_json_data(data)
@@ -230,6 +257,9 @@ class Paragraph:
 
 
 class WorkBlock:
+    """
+    Work block
+    schedule paragraph which will be randomly filled with routines and work times"""
 
     def __init__(self, master, dictionary):
         self.frame = tk.Frame(master)
@@ -238,7 +268,8 @@ class WorkBlock:
         self.label = tk.Label(self.frame, text=self.text)
         self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
 
-    def __get_string(self):
+    def __get_string(self) -> str:
+        """Get a string with work block info"""
         duration = minutes_to_time(self.dictionary['duration'])
         start_time = self.dictionary['start']
         start_str = minutes_to_time(start_time)
@@ -249,11 +280,13 @@ class WorkBlock:
         return "{} Блок работы [{}]".format(start_str, duration)
 
     def pack(self):
+        """Pack work block"""
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.delete_button.pack(side=tk.RIGHT)
 
     def destroy(self):
+        """Destroy work block"""
         data = get_json_data()
         data['work_blocks'].remove(self.dictionary)
         write_json_data(data)
@@ -261,6 +294,7 @@ class WorkBlock:
 
 
 class NameGetter:
+    """Entry for name of something"""
 
     def __init__(self, window):
         self.name_frame = tk.Frame(window)
@@ -268,15 +302,18 @@ class NameGetter:
         self.name_entry = tk.Entry(self.name_frame)
 
     def pack(self):
+        """Pack the frame"""
         self.name_frame.pack()
         self.name_label.pack(side=tk.LEFT)
         self.name_entry.pack(side=tk.LEFT)
 
     def name(self):
+        """Get the name"""
         return self.name_entry.get()
 
 
 class TimeGetter:
+    """Entry for time of something"""
 
     def __init__(self, window, text):
         self.frame = tk.Frame(window)
@@ -285,6 +322,7 @@ class TimeGetter:
         self.minutes_entry = tk.Entry(self.frame, width=2)
 
     def pack(self):
+        """Pack frame"""
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.hours_entry.pack(side=tk.LEFT)
@@ -292,26 +330,31 @@ class TimeGetter:
         self.minutes_entry.pack(side=tk.LEFT)
 
     def time(self):
+        """Get time"""
         return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get())
 
 
 class DurationGetter:
-
+    """Entry for duration of something"""
+    # TODO Replace with TimeGetter
     def __init__(self, window):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text="Длительность")
         self.duration_entry = tk.Entry(self.frame, width=3)
 
     def pack(self):
+        """Pack a frame"""
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.duration_entry.pack(side=tk.LEFT)
 
     def time(self):
+        """Get time"""
         return int(self.duration_entry.get())
 
 
 class ParagraphGetter:
+    """Window with entries for schedule paragraph"""
 
     def __init__(self, master: Main):
         self.master = master
@@ -319,9 +362,11 @@ class ParagraphGetter:
         self.name_frame = NameGetter(self.window)
         self.start_frame = TimeGetter(self.window, "Начало")
         self.end_frame = TimeGetter(self.window, "Конец")
-        self.okay_button = tk.Button(self.window, text="OK", command=self.append_schedule_paragraph_to_json)
+        self.okay_button = tk.Button(self.window, text="OK",
+                                     command=self.append_schedule_paragraph_to_json)
 
     def pack(self):
+        """Create a window and run it"""
         self.name_frame.pack()
         self.start_frame.pack()
         self.end_frame.pack()
@@ -329,6 +374,7 @@ class ParagraphGetter:
         self.window.mainloop()
 
     def append_schedule_paragraph_to_json(self):
+        """Write data about schedule paragraph into json"""
         paragraph = self.paragraph()
         data = get_json_data()
         data['schedule'].append(paragraph)
@@ -336,13 +382,15 @@ class ParagraphGetter:
         self.master.update_schedule_frame()
         self.window.destroy()
 
-    def paragraph(self):
+    def paragraph(self) -> dict:
+        """Get paragraph properties as dictionary"""
         return {"name": self.name_frame.name(),
                 "start": self.start_frame.time(),
                 "end": self.end_frame.time()}
 
 
 class RoutineGetter:
+    """Window with entries for routine"""
 
     def __init__(self, master: Main):
         self.master = master
@@ -352,12 +400,14 @@ class RoutineGetter:
         self.okay_button = tk.Button(self.window, text="OK", command=self.append_routine_to_json)
 
     def pack(self):
+        """Create a new window and run it"""
         self.name_frame.pack()
         self.duration_frame.pack()
         self.okay_button.pack()
         self.window.mainloop()
 
     def append_routine_to_json(self):
+        """Write data about routine to json"""
         paragraph = self.paragraph()
         data = get_json_data()
         data['routines'][self.name()] = paragraph
@@ -365,16 +415,19 @@ class RoutineGetter:
         self.master.update_routines_frame()
         self.window.destroy()
 
-    def paragraph(self):
+    def paragraph(self) -> dict:
+        """Get routine properties as dictionary"""
         return {"name": self.name(),
                 "duration": self.duration_frame.time(),
                 "active_work_blocks": []}
 
-    def name(self):
+    def name(self) -> str:
+        """Get the name of routine"""
         return self.name_frame.name()
 
 
 class WorkBlockGetter:
+    """Window with entries for work block"""
 
     def __init__(self, master: Main):
         self.master = master
@@ -385,6 +438,7 @@ class WorkBlockGetter:
         self.okay_button = tk.Button(self.window, text="OK", command=self.append_work_block_to_json)
 
     def pack(self):
+        """Create a new window and run it"""
         self.start_frame.pack()
         self.end_frame.pack()
         self.duration_frame.pack()
@@ -392,6 +446,7 @@ class WorkBlockGetter:
         self.window.mainloop()
 
     def append_work_block_to_json(self):
+        """Write data about work block into json"""
         paragraph = self.paragraph()
         data = get_json_data()
         data['work_blocks'].append(paragraph)
@@ -401,13 +456,15 @@ class WorkBlockGetter:
         self.master.update_routines_frame()
         self.window.destroy()
 
-    def paragraph(self):
+    def paragraph(self) -> dict:
+        """Get work block properties as dictionary"""
         return {"start": self.start_frame.time(),
                 "end": self.end_frame.time(),
                 "duration": self.duration_frame.time()}
 
 
-def minutes_to_time(minutes: int):
+def minutes_to_time(minutes: int) -> str:
+    """Converts minutes to format [hh:mm]"""
     return f'{minutes//60:0>2}:{minutes%60:0>2}'
 
 
@@ -428,23 +485,23 @@ def display_schedule_table(schedule, forbidden_pleasures, day_tuple):
     """This function is now used now but will be used in future. Don't touch"""
     day_today = datetime.datetime(*day_tuple)
     file_name = '../Наработки/Планы.xlsx'
-    wb = load_workbook(file_name)
-    ws = wb['Дневной']
-    column = get_table_column(ws, day_today)
+    workbook = load_workbook(file_name)
+    worksheet = workbook['Дневной']
+    column = get_table_column(worksheet, day_today)
     row = 2
     time = 390
     for routine in schedule:
-        cell = ws.cell(column=column, row=row)
+        cell = worksheet.cell(column=column, row=row)
         routine.table_paragraph(cell, time)
         row += 1
         time += routine.duration
 
     for pleasure in forbidden_pleasures:
-        cell = ws.cell(column=column, row=row)
+        cell = worksheet.cell(column=column, row=row)
         cell.value = "Нельзя " + pleasure
         row += 1
 
-    wb.save(file_name)
+    workbook.save(file_name)
 
 
 def get_table_column(worksheet, day_today):
@@ -455,40 +512,47 @@ def get_table_column(worksheet, day_today):
         if cell.value is None:
             cell.value = day_today
             break
-        elif cell.value == day_today:
+        if cell.value == day_today:
             break
         column += 1
     return column
 
 
 def get_json_data():
+    """Get all the data from json"""
     with open('data.json', 'r', encoding='utf-8') as file:
         return json.load(file)
 
 
-def get_pleasures():
+def get_pleasures() -> dict:
+    """Get pleasures"""
     return get_json_data()['pleasures']
 
 
-def get_schedule():
+def get_schedule() -> list:
+    """Get schedule without work blocks"""
     return get_json_data()['schedule']
 
 
 def get_routines() -> dict:
+    """Get routines"""
     return get_json_data()['routines']
 
 
 def get_work_blocks() -> list:
+    """Get work blocks"""
     return get_json_data()['work_blocks']
 
 
-def write_json_data(data):
+def write_json_data(data) -> None:
+    """Update the json"""
     with open('data.json', 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
+
 if not isfile("data.json"):
-    write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [],"routines": {}})
-    
+    write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}})
+
 Main()
 
 # TODO Архитектура. Или печатаешь, или возвращаешь
