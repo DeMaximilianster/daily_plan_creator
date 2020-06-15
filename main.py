@@ -14,7 +14,6 @@ class Main:
     def __init__(self):
         self.main_window = tk.Tk()
         self.pleasures_frame = self.__create_pleasures_frame()
-        # TODO Updating probability of pleasure while clicking
         self.schedule_frame = self.__create_schedule_frame()
         self.routines_frame = self.__create_routines_frame()
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
@@ -192,23 +191,31 @@ class IndexCheckbutton:
 class Pleasure:
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
-    def __init__(self, master, text, probability):
+    def __init__(self, master, name, probability):
+        self.name = name
+        self.probability = tk.IntVar(value=probability)
         self.frame = tk.Frame(master)
-        self.label = tk.Label(self.frame, text=text)
-        self.entry = tk.Entry(self.frame, width=3)
-        self.entry.insert(tk.END, probability)
+        self.label = tk.Label(self.frame, text=name)
+        self.entry = tk.Entry(self.frame, width=3, textvariable=self.probability)
+        self.probability.trace('w', lambda *args: self.__update_json())
+
+    def get_probability(self) -> int:
+        """Get probability in entry"""
+        try:
+            probability = self.probability.get()
+        except tk.TclError:
+            probability = 0
+        return probability
 
     def increase_probability(self):
         """Increase probability of pleasure allowance"""
-        probability = int(self.entry.get())
-        self.entry.delete(0, tk.END)
-        self.entry.insert(tk.END, probability + 1)
+        self.probability.set(self.get_probability()+1)
+        self.__update_json()
 
     def decrease_probability(self):
         """Decrease probability of pleasure allowance"""
-        probability = int(self.entry.get())
-        self.entry.delete(0, tk.END)
-        self.entry.insert(tk.END, probability - 1)
+        self.probability.set(self.get_probability()-1)
+        self.__update_json()
 
     def pack(self):
         """Pack a pleasure"""
@@ -219,6 +226,12 @@ class Pleasure:
                   command=self.increase_probability).pack(side=tk.LEFT)
         tk.Button(self.frame, text='-', width=1, height=1,
                   command=self.decrease_probability).pack(side=tk.LEFT)
+
+    def __update_json(self):
+        """Update pleasure in json"""
+        pleasures = get_pleasures()
+        pleasures[self.name] = self.get_probability()
+        write_pleasures(pleasures)
 
 
 class Paragraph:
@@ -550,6 +563,13 @@ def write_json_data(data) -> None:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 
+def write_pleasures(pleasures: dict) -> None:
+    """Update pleasures"""
+    data = get_json_data()
+    data['pleasures'] = pleasures
+    write_json_data(data)
+
+
 if not isfile("data.json"):
     write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}})
 
@@ -559,7 +579,6 @@ Main()
 # TODO очистка планов при перезаписи
 
 # TODO GUI
-#  TODO Кнопка редактирования удовольствия
 #  TODO Запись новых удовольствий
 #  TODO Удаление старых удовольствий
 
