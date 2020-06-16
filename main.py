@@ -20,6 +20,8 @@ class Main:
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
                                    height=15, width=20)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
+        self.textbox = tk.Text(self.main_window)
+        self.textbox.pack()
         self.main_window.mainloop()
 
     def __create_pleasures_frame(self):
@@ -82,9 +84,7 @@ class Main:
 
     def __make_schedule(self):
         """Make a schedule based on options"""
-        # TODO each press of "GO" button creates new textbox
-        textbox = tk.Text(self.main_window)
-        textbox.pack()
+        self.textbox.delete('1.0', tk.END)
         routines = list(get_routines().values())
         routines.sort(key=lambda x: len(x['active_work_blocks']))
         work_blocks = get_work_blocks()
@@ -121,21 +121,21 @@ class Main:
                     start_str = minutes_to_time(start_minute)
                     name = paragraph['name']
                     if paragraph['duration'] == 0:
-                        textbox.insert(tk.END, "{} {}\n".format(start_str, name))
+                        self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
                     else:
                         # we created start_str so we can change start_minute
                         start_minute += paragraph['duration']
                         end_str = minutes_to_time(start_minute)
-                        textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
+                        self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
 
             else:  # just a paragraph
                 name = schedule_paragraph['name']
                 start_str = minutes_to_time(start_minute)
                 if start_minute != end_minute:
                     end_str = minutes_to_time(end_minute)
-                    textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
+                    self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
                 else:
-                    textbox.insert(tk.END, "{} {}\n".format(start_str, name))
+                    self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
     # TODO print forbidden pleasures
     # TODO print things to do
 
