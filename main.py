@@ -1,5 +1,6 @@
 """Program for creating flexible schedules"""
 
+from abc import ABC, abstractmethod
 from random import randint, choice, shuffle
 import datetime
 import json
@@ -26,11 +27,17 @@ class Main:
         pleasures_frame = tk.LabelFrame(self.main_window, text="Удовольствия")
         pleasures_dictionary = get_pleasures()
         for pleasure in pleasures_dictionary:
-            Pleasure(pleasures_frame, pleasure, pleasures_dictionary[pleasure]).pack()
-        add_pleasure = tk.Button(pleasures_frame, text="Добавить удовольствие")
+            Pleasure(pleasures_frame, pleasures_dictionary[pleasure]).pack()
+        add_pleasure = tk.Button(pleasures_frame, text="Добавить удовольствие",
+                                 command=lambda: PleasureGetter(self).pack())
         pleasures_frame.pack(side=tk.LEFT)
         add_pleasure.pack(anchor=tk.S)
         return pleasures_frame
+
+    def update_pleasures_frame(self):
+        """Update pleasures frame"""
+        self.pleasures_frame.destroy()
+        self.pleasures_frame = self.__create_pleasures_frame()
 
     def __create_schedule_frame(self):
         """Create schedule frame"""
@@ -191,11 +198,11 @@ class IndexCheckbutton:
 class Pleasure:
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
-    def __init__(self, master, name, probability):
-        self.name = name
-        self.probability = tk.IntVar(value=probability)
+    def __init__(self, master, dictionary):
+        self.name = dictionary['name']
+        self.probability = tk.IntVar(value=dictionary['probability'])
         self.frame = tk.Frame(master)
-        self.label = tk.Label(self.frame, text=name)
+        self.label = tk.Label(self.frame, text=self.name)
         self.entry = tk.Entry(self.frame, width=3, textvariable=self.probability)
         self.probability.trace('w', lambda *args: self.__update_json())
 
@@ -227,10 +234,13 @@ class Pleasure:
         tk.Button(self.frame, text='-', width=1, height=1,
                   command=self.decrease_probability).pack(side=tk.LEFT)
 
+    def dictionary(self):
+        return {"name": self.name, "probability": self.get_probability()}
+
     def __update_json(self):
         """Update pleasure in json"""
         pleasures = get_pleasures()
-        pleasures[self.name] = self.get_probability()
+        pleasures[self.name] = self.dictionary()
         write_pleasures(pleasures)
 
 
@@ -347,9 +357,9 @@ class TimeGetter:
         return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get())
 
 
-class DurationGetter:
-    """Entry for duration of something"""
-    # TODO Replace with TimeGetter
+class NumberGetter:
+    """Entry for getting a number"""
+    # TODO Replace with TimeGetter when used for gaining time
     def __init__(self, window):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text="Длительность")
@@ -366,27 +376,72 @@ class DurationGetter:
         return int(self.duration_entry.get())
 
 
-class ParagraphGetter:
-    """Window with entries for schedule paragraph"""
+class ObjectGetter(ABC):
 
     def __init__(self, master: Main):
         self.master = master
         self.window = tk.Tk()
-        self.name_frame = NameGetter(self.window)
-        self.start_frame = TimeGetter(self.window, "Начало")
-        self.end_frame = TimeGetter(self.window, "Конец")
         self.okay_button = tk.Button(self.window, text="OK",
-                                     command=self.append_schedule_paragraph_to_json)
+                                     command=self.append_to_json)
 
+    @abstractmethod
     def pack(self):
-        """Create a window and run it"""
-        self.name_frame.pack()
-        self.start_frame.pack()
-        self.end_frame.pack()
         self.okay_button.pack()
         self.window.mainloop()
 
-    def append_schedule_paragraph_to_json(self):
+    @abstractmethod
+    def append_to_json(self):
+        pass
+
+    @abstractmethod
+    def paragraph(self):
+        pass
+
+
+class PleasureGetter(ObjectGetter):
+    """Window with entries for pleasure"""
+
+    def __init__(self, master: Main):
+        super().__init__(master)
+        self.name_frame = NameGetter(self.window)
+        self.probability = NumberGetter(self.window)
+
+    def pack(self):
+        self.name_frame.pack()
+        self.probability.pack()
+        super().pack()
+
+    def append_to_json(self):
+        paragraph = self.paragraph()
+        data = get_json_data()
+        data['pleasures'][self.name()] = paragraph
+        write_json_data(data)
+        self.master.update_pleasures_frame()
+        self.window.destroy()
+
+    def paragraph(self):
+        return {'name': self.name_frame.name(), 'probability': self.probability.time()}
+
+    def name(self):
+        return self.name_frame.name()
+
+
+class ParagraphGetter(ObjectGetter):
+    """Window with entries for schedule paragraph"""
+
+    def __init__(self, master: Main):
+        super().__init__(master)
+        self.name_frame = NameGetter(self.window)
+        self.start_frame = TimeGetter(self.window, "Начало")
+        self.end_frame = TimeGetter(self.window, "Конец")
+
+    def pack(self):
+        """Create a window and run it"""
+        self.start_frame.pack()
+        self.end_frame.pack()
+        super().pack()
+
+    def append_to_json(self):
         """Write data about schedule paragraph into json"""
         paragraph = self.paragraph()
         data = get_json_data()
@@ -402,24 +457,21 @@ class ParagraphGetter:
                 "end": self.end_frame.time()}
 
 
-class RoutineGetter:
+class RoutineGetter(ObjectGetter):
     """Window with entries for routine"""
 
     def __init__(self, master: Main):
-        self.master = master
-        self.window = tk.Tk()
+        super().__init__(master)
         self.name_frame = NameGetter(self.window)
-        self.duration_frame = DurationGetter(self.window)
-        self.okay_button = tk.Button(self.window, text="OK", command=self.append_routine_to_json)
+        self.duration_frame = NumberGetter(self.window)
 
     def pack(self):
         """Create a new window and run it"""
         self.name_frame.pack()
         self.duration_frame.pack()
-        self.okay_button.pack()
-        self.window.mainloop()
+        super().pack()
 
-    def append_routine_to_json(self):
+    def append_to_json(self):
         """Write data about routine to json"""
         paragraph = self.paragraph()
         data = get_json_data()
@@ -439,26 +491,23 @@ class RoutineGetter:
         return self.name_frame.name()
 
 
-class WorkBlockGetter:
+class WorkBlockGetter(ObjectGetter):
     """Window with entries for work block"""
 
     def __init__(self, master: Main):
-        self.master = master
-        self.window = tk.Tk()
+        super().__init__(master)
         self.start_frame = TimeGetter(self.window, "Начало")
         self.end_frame = TimeGetter(self.window, "Конец")
-        self.duration_frame = DurationGetter(self.window)
-        self.okay_button = tk.Button(self.window, text="OK", command=self.append_work_block_to_json)
+        self.duration_frame = NumberGetter(self.window)
 
     def pack(self):
         """Create a new window and run it"""
         self.start_frame.pack()
         self.end_frame.pack()
         self.duration_frame.pack()
-        self.okay_button.pack()
-        self.window.mainloop()
+        super().pack()
 
-    def append_work_block_to_json(self):
+    def append_to_json(self):
         """Write data about work block into json"""
         paragraph = self.paragraph()
         data = get_json_data()
@@ -579,7 +628,6 @@ Main()
 # TODO очистка планов при перезаписи
 
 # TODO GUI
-#  TODO Запись новых удовольствий
 #  TODO Удаление старых удовольствий
 
 # TODO Пофиксить баг, который может случиться, если на одноразовую рутину не хватает времени
