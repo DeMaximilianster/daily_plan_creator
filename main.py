@@ -1,7 +1,7 @@
 """Program for creating flexible schedules"""
 
 from abc import ABC, abstractmethod
-from random import randint, choice, shuffle
+from random import randint, choice, shuffle, random
 import datetime
 import json
 import tkinter as tk
@@ -104,38 +104,49 @@ class Main:
             end_minute = schedule_paragraph['end']
             start_minute = schedule_paragraph['start']
             if 'duration' in schedule_paragraph.keys():  # work block
-                minutes_of_work = schedule_paragraph['duration']
-                sequence = schedule_paragraph['routines']
-                minutes_of_rest = end_minute - start_minute - minutes_of_work
-                for routine in sequence:
-                    minutes_of_work -= routine['duration']
-                while minutes_of_work >= 45:
-                    time_block = choice(range(45, min(120, minutes_of_work) + 1, 15))
-                    sequence.append({'name': "Цикл работы", 'duration': time_block})
-                    minutes_of_work -= time_block
-                minutes_of_rest += minutes_of_work
-                shuffle(sequence)
-                sequence.append({'name': "Отдых", 'duration': minutes_of_rest})
-
-                for paragraph in sequence:
-                    start_str = minutes_to_time(start_minute)
-                    name = paragraph['name']
-                    if paragraph['duration'] == 0:
-                        self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
-                    else:
-                        # we created start_str so we can change start_minute
-                        start_minute += paragraph['duration']
-                        end_str = minutes_to_time(start_minute)
-                        self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
-
+                self.insert_work_block(schedule_paragraph, start_minute, end_minute)
             else:  # just a paragraph
-                name = schedule_paragraph['name']
-                start_str = minutes_to_time(start_minute)
-                if start_minute != end_minute:
-                    end_str = minutes_to_time(end_minute)
-                    self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
-                else:
-                    self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
+                self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
+        for pleasure in get_pleasures().values():
+            if random() * 100 > pleasure['probability']:
+                self.textbox.insert(tk.END, "Удовольствие [{}] запрещено".format(pleasure['name']))
+
+    def insert_paragraph(self, schedule_paragraph, start_minute, end_minute):
+        """Insert paragraph data to textbox"""
+        name = schedule_paragraph['name']
+        start_str = minutes_to_time(start_minute)
+        if start_minute != end_minute:
+            end_str = minutes_to_time(end_minute)
+            self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
+        else:
+            self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
+
+    def insert_work_block(self, schedule_paragraph, start_minute, end_minute):
+        """Insert work block data to textbox"""
+        minutes_of_work = schedule_paragraph['duration']
+        sequence = schedule_paragraph['routines']
+        minutes_of_rest = end_minute - start_minute - minutes_of_work
+        for routine in sequence:
+            minutes_of_work -= routine['duration']
+        while minutes_of_work >= 45:
+            time_block = choice(range(45, min(120, minutes_of_work) + 1, 15))
+            sequence.append({'name': "Цикл работы", 'duration': time_block})
+            minutes_of_work -= time_block
+        minutes_of_rest += minutes_of_work
+        shuffle(sequence)
+        sequence.append({'name': "Отдых", 'duration': minutes_of_rest})
+
+        for paragraph in sequence:
+            start_str = minutes_to_time(start_minute)
+            name = paragraph['name']
+            if paragraph['duration'] == 0:
+                self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
+            else:
+                # we created start_str so we can change start_minute
+                start_minute += paragraph['duration']
+                end_str = minutes_to_time(start_minute)
+                self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
+
     # TODO print forbidden pleasures
     # TODO print things to do
 
@@ -235,6 +246,7 @@ class Pleasure:
                   command=self.decrease_probability).pack(side=tk.LEFT)
 
     def dictionary(self):
+        """Get data about pleasure as dictionary"""
         return {"name": self.name, "probability": self.get_probability()}
 
     def __update_json(self):
@@ -377,6 +389,7 @@ class NumberGetter:
 
 
 class ObjectGetter(ABC):
+    """Window with entries for objects like pleasures and work blocks"""
 
     def __init__(self, master: Main):
         self.master = master
@@ -386,16 +399,17 @@ class ObjectGetter(ABC):
 
     @abstractmethod
     def pack(self):
+        """Create a window with entries"""
         self.okay_button.pack()
         self.window.mainloop()
 
     @abstractmethod
     def append_to_json(self):
-        pass
+        """Append data about object to json-file"""
 
     @abstractmethod
     def paragraph(self):
-        pass
+        """Get data about object as dictionary"""
 
 
 class PleasureGetter(ObjectGetter):
@@ -412,6 +426,7 @@ class PleasureGetter(ObjectGetter):
         super().pack()
 
     def append_to_json(self):
+        """Write data about pleasure to json"""
         paragraph = self.paragraph()
         data = get_json_data()
         data['pleasures'][self.name()] = paragraph
@@ -419,10 +434,12 @@ class PleasureGetter(ObjectGetter):
         self.master.update_pleasures_frame()
         self.window.destroy()
 
-    def paragraph(self):
+    def paragraph(self) -> dict:
+        """Get data about pleasure as dictionary"""
         return {'name': self.name_frame.name(), 'probability': self.probability.time()}
 
     def name(self):
+        """Get pleasure's name"""
         return self.name_frame.name()
 
 
