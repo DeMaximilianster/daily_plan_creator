@@ -14,11 +14,12 @@ class Main:
 
     def __init__(self):
         self.main_window = tk.Tk()
+        self.main_window.resizable(0, 0)
         self.pleasures_frame = self.__create_pleasures_frame()
         self.schedule_frame = self.__create_schedule_frame()
         self.routines_frame = self.__create_routines_frame()
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
-                                   height=15, width=20)
+                                   height=2, width=91)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
         self.textbox = tk.Text(self.main_window)
         self.textbox.pack()
@@ -32,8 +33,8 @@ class Main:
             Pleasure(pleasures_frame, pleasures_dictionary[pleasure]).pack()
         add_pleasure = tk.Button(pleasures_frame, text="Добавить удовольствие",
                                  command=lambda: PleasureGetter(self).pack())
-        pleasures_frame.pack(side=tk.LEFT)
-        add_pleasure.pack(anchor=tk.S)
+        pleasures_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        add_pleasure.pack(side=tk.BOTTOM)
         return pleasures_frame
 
     def update_pleasures_frame(self):
@@ -55,7 +56,7 @@ class Main:
                                            command=lambda: ParagraphGetter(self).pack())
         add_work_block = tk.Button(schedule_frame, text="Добавить блок работы",
                                    command=lambda: WorkBlockGetter(self).pack())
-        schedule_frame.pack(side=tk.LEFT, anchor=tk.N)
+        schedule_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
         add_schedule_paragraph.pack(side=tk.BOTTOM)
         add_work_block.pack(side=tk.BOTTOM)
         return schedule_frame
@@ -73,8 +74,8 @@ class Main:
             Routine(routines_frame, routines_dict[routine]).pack()
         add_routine = tk.Button(routines_frame, text="Добавить дело",
                                 command=lambda: RoutineGetter(self).pack())
-        routines_frame.pack(side=tk.LEFT)
-        add_routine.pack()
+        routines_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        add_routine.pack(side=tk.BOTTOM)
         return routines_frame
 
     def update_routines_frame(self):
@@ -109,7 +110,7 @@ class Main:
                 self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
         for pleasure in get_pleasures().values():
             if random() * 100 > pleasure['probability']:
-                self.textbox.insert(tk.END, "Удовольствие [{}] запрещено".format(pleasure['name']))
+                self.textbox.insert(tk.END, "Удовольствие [{}] запрещено\n".format(pleasure['name']))
 
     def insert_paragraph(self, schedule_paragraph, start_minute, end_minute):
         """Insert paragraph data to textbox"""
@@ -454,6 +455,7 @@ class ParagraphGetter(ObjectGetter):
 
     def pack(self):
         """Create a window and run it"""
+        self.name_frame.pack()
         self.start_frame.pack()
         self.end_frame.pack()
         super().pack()
