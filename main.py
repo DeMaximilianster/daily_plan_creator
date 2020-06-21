@@ -15,73 +15,15 @@ class Main:
     def __init__(self):
         self.main_window = tk.Tk()
         self.main_window.resizable(0, 0)
-        self.pleasures_frame = self.__create_pleasures_frame()
-        self.schedule_frame = self.__create_schedule_frame()
-        self.routines_frame = self.__create_routines_frame()
+        self.pleasures_frame = PleasuresFrame(self, "Удовольствия")
+        self.schedule_frame = ScheduleFrame(self, "Расписание")
+        self.routines_frame = RoutinesFrame(self, "Дела")
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
                                    height=2, width=91)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
         self.textbox = tk.Text(self.main_window)
         self.textbox.pack()
         self.main_window.mainloop()
-
-    def __create_pleasures_frame(self):
-        """Create pleasures frame"""
-        pleasures_frame = tk.LabelFrame(self.main_window, text="Удовольствия")
-        pleasures_dictionary = get_pleasures()
-        for pleasure in pleasures_dictionary:
-            Pleasure(pleasures_frame, pleasures_dictionary[pleasure]).pack()
-        add_pleasure = tk.Button(pleasures_frame, text="Добавить удовольствие",
-                                 command=lambda: PleasureGetter(self).pack())
-        pleasures_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
-        add_pleasure.pack(side=tk.BOTTOM)
-        return pleasures_frame
-
-    def update_pleasures_frame(self):
-        """Update pleasures frame"""
-        self.pleasures_frame.destroy()
-        self.pleasures_frame = self.__create_pleasures_frame()
-
-    def __create_schedule_frame(self):
-        """Create schedule frame"""
-        schedule_frame = tk.LabelFrame(self.main_window, text="Расписание")
-        schedule_list = get_schedule() + get_work_blocks()
-        schedule_list.sort(key=lambda x: x['start'])
-        for paragraph in schedule_list:
-            if 'duration' in paragraph.keys():
-                WorkBlock(schedule_frame, paragraph).pack()
-            else:
-                Paragraph(schedule_frame, paragraph).pack()
-        add_schedule_paragraph = tk.Button(schedule_frame, text="Добавить пункт плана",
-                                           command=lambda: ParagraphGetter(self).pack())
-        add_work_block = tk.Button(schedule_frame, text="Добавить блок работы",
-                                   command=lambda: WorkBlockGetter(self).pack())
-        schedule_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
-        add_schedule_paragraph.pack(side=tk.BOTTOM)
-        add_work_block.pack(side=tk.BOTTOM)
-        return schedule_frame
-
-    def update_schedule_frame(self):
-        """Update schedule frame"""
-        self.schedule_frame.destroy()
-        self.schedule_frame = self.__create_schedule_frame()
-
-    def __create_routines_frame(self):
-        """Create routines frame"""
-        routines_frame = tk.LabelFrame(self.main_window, text="Дела")
-        routines_dict = get_routines()
-        for routine in routines_dict.keys():
-            Routine(routines_frame, routines_dict[routine]).pack()
-        add_routine = tk.Button(routines_frame, text="Добавить дело",
-                                command=lambda: RoutineGetter(self).pack())
-        routines_frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
-        add_routine.pack(side=tk.BOTTOM)
-        return routines_frame
-
-    def update_routines_frame(self):
-        """Update routines frame"""
-        self.routines_frame.destroy()
-        self.routines_frame = self.__create_routines_frame()
 
     def __make_schedule(self):
         """Make a schedule based on options"""
@@ -147,9 +89,71 @@ class Main:
                 start_minute += paragraph['duration']
                 end_str = minutes_to_time(start_minute)
                 self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
-
-    # TODO print forbidden pleasures
     # TODO print things to do
+
+
+class Frame(ABC):
+
+    def __init__(self, main: Main, name: str):
+        self.name = name
+        self.main = main
+        self.frame = tk.LabelFrame(main.main_window, text=name)
+        self.pack()
+
+    @abstractmethod
+    def pack(self):
+        pass
+
+    def clear(self):
+        for slave in self.frame.pack_slaves():
+            slave.destroy()
+
+    def update(self):
+        self.clear()
+        self.pack()
+
+
+class PleasuresFrame(Frame):
+
+    def pack(self):
+        pleasures_dictionary = get_pleasures()
+        for pleasure in pleasures_dictionary:
+            pleasure_object = Pleasure(self.frame, pleasures_dictionary[pleasure])
+            pleasure_object.pack()
+        add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
+                                 command=lambda: PleasureGetter(self.main).pack())
+        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        add_pleasure.pack(side=tk.BOTTOM)
+
+
+class ScheduleFrame(Frame):
+    def pack(self):
+        """Create schedule frame"""
+        schedule_list = get_schedule() + get_work_blocks()
+        schedule_list.sort(key=lambda x: x['start'])
+        for paragraph in schedule_list:
+            if 'duration' in paragraph.keys():
+                WorkBlock(self.frame, paragraph).pack()
+            else:
+                Paragraph(self.frame, paragraph).pack()
+        add_schedule_paragraph = tk.Button(self.frame, text="Добавить пункт плана",
+                                           command=lambda: ParagraphGetter(self.main).pack())
+        add_work_block = tk.Button(self.frame, text="Добавить блок работы",
+                                   command=lambda: WorkBlockGetter(self.main).pack())
+        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        add_schedule_paragraph.pack(side=tk.BOTTOM)
+        add_work_block.pack(side=tk.BOTTOM)
+
+
+class RoutinesFrame(Frame):
+    def pack(self):
+        routines_dict = get_routines()
+        for routine in routines_dict.keys():
+            Routine(self.frame, routines_dict[routine]).pack()
+        add_routine = tk.Button(self.frame, text="Добавить дело",
+                                command=lambda: RoutineGetter(self.main).pack())
+        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        add_routine.pack(side=tk.BOTTOM)
 
 
 class Routine:
@@ -245,6 +249,9 @@ class Pleasure:
                   command=self.increase_probability).pack(side=tk.LEFT)
         tk.Button(self.frame, text='-', width=1, height=1,
                   command=self.decrease_probability).pack(side=tk.LEFT)
+
+    def destroy(self):
+        self.frame.destroy()
 
     def dictionary(self):
         """Get data about pleasure as dictionary"""
@@ -432,7 +439,7 @@ class PleasureGetter(ObjectGetter):
         data = get_json_data()
         data['pleasures'][self.name()] = paragraph
         write_json_data(data)
-        self.master.update_pleasures_frame()
+        self.master.pleasures_frame.update()
         self.window.destroy()
 
     def paragraph(self) -> dict:
@@ -466,7 +473,7 @@ class ParagraphGetter(ObjectGetter):
         data = get_json_data()
         data['schedule'].append(paragraph)
         write_json_data(data)
-        self.master.update_schedule_frame()
+        self.master.schedule_frame.update()
         self.window.destroy()
 
     def paragraph(self) -> dict:
@@ -496,7 +503,7 @@ class RoutineGetter(ObjectGetter):
         data = get_json_data()
         data['routines'][self.name()] = paragraph
         write_json_data(data)
-        self.master.update_routines_frame()
+        self.master.routines_frame.update()
         self.window.destroy()
 
     def paragraph(self) -> dict:
@@ -533,8 +540,8 @@ class WorkBlockGetter(ObjectGetter):
         data['work_blocks'].append(paragraph)
         data['work_blocks'].sort(key=lambda x: x['start'])
         write_json_data(data)
-        self.master.update_schedule_frame()
-        self.master.update_routines_frame()
+        self.master.schedule_frame.update()
+        self.master.routines_frame.update()
         self.window.destroy()
 
     def paragraph(self) -> dict:
@@ -650,5 +657,3 @@ Main()
 #  TODO Удаление старых удовольствий
 
 # TODO Пофиксить баг, который может случиться, если на одноразовую рутину не хватает времени
-
-# TODO Вместо удаления и повторного создания рамки, перезаполнять её
