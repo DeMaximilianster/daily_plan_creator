@@ -381,9 +381,9 @@ class TimeGetter:
 class NumberGetter:
     """Entry for getting a number"""
     # TODO Replace with TimeGetter when used for gaining time
-    def __init__(self, window):
+    def __init__(self, window, text):
         self.frame = tk.Frame(window)
-        self.label = tk.Label(self.frame, text="Длительность")
+        self.label = tk.Label(self.frame, text=text)
         self.duration_entry = tk.Entry(self.frame, width=3)
 
     def pack(self):
@@ -427,7 +427,7 @@ class PleasureGetter(ObjectGetter):
     def __init__(self, master: Main):
         super().__init__(master)
         self.name_frame = NameGetter(self.window)
-        self.probability = NumberGetter(self.window)
+        self.probability = NumberGetter(self.window, "Вероятность")
 
     def pack(self):
         self.name_frame.pack()
@@ -490,7 +490,7 @@ class RoutineGetter(ObjectGetter):
     def __init__(self, master: Main):
         super().__init__(master)
         self.name_frame = NameGetter(self.window)
-        self.duration_frame = NumberGetter(self.window)
+        self.duration_frame = TimeGetter(self.window, "Длительность")
 
     def pack(self):
         """Create a new window and run it"""
@@ -525,7 +525,7 @@ class WorkBlockGetter(ObjectGetter):
         super().__init__(master)
         self.start_frame = TimeGetter(self.window, "Начало")
         self.end_frame = TimeGetter(self.window, "Конец")
-        self.duration_frame = NumberGetter(self.window)
+        self.duration_frame = TimeGetter(self.window, "Длительность")
 
     def pack(self):
         """Create a new window and run it"""
