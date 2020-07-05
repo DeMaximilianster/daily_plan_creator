@@ -5,6 +5,7 @@ from random import randint, choice, shuffle, random
 import datetime
 import json
 import tkinter as tk
+from tkinter import ttk
 from os.path import isfile
 from openpyxl import load_workbook
 
@@ -361,8 +362,8 @@ class TimeGetter:
     def __init__(self, window, text):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
-        self.hours_entry = tk.Entry(self.frame, width=2)
-        self.minutes_entry = tk.Entry(self.frame, width=2)
+        self.hours_entry = ttk.Combobox(self.frame, values=list(range(1, 25)), width=2)
+        self.minutes_entry = ttk.Combobox(self.frame, values=list(range(0, 60, 5)), width=2)
 
     def pack(self):
         """Pack frame"""
