@@ -162,6 +162,7 @@ class Routine:
 
     def __init__(self, master, dictionary):
         self.dictionary = dictionary
+        self.name = dictionary["name"]
         self.frame = tk.Frame(master)
         self.check_buttons = []
         for index in range(len(get_work_blocks())):
@@ -180,7 +181,7 @@ class Routine:
     def destroy(self):
         """Delete routine"""
         data = get_json_data()
-        data['routines'].remove(self.dictionary)
+        data['routines'].pop(self.name)
         write_json_data(data)
         self.frame.destroy()
 
@@ -362,8 +363,10 @@ class TimeGetter:
     def __init__(self, window, text):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
-        self.hours_entry = ttk.Combobox(self.frame, values=list(range(1, 25)), width=2)
+        self.hours_entry = ttk.Combobox(self.frame, values=list(range(0, 25)), width=2)
+        self.hours_entry.current(0)  # choose zero as a default hour
         self.minutes_entry = ttk.Combobox(self.frame, values=list(range(0, 60, 5)), width=2)
+        self.minutes_entry.current(0)  # choose zero as a default minute
 
     def pack(self):
         """Pack frame"""
