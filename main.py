@@ -90,7 +90,6 @@ class Main:
                 start_minute += paragraph['duration']
                 end_str = minutes_to_time(start_minute)
                 self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
-    # TODO print things to do
 
 
 class Frame(ABC):
@@ -157,13 +156,28 @@ class RoutinesFrame(Frame):
         add_routine.pack(side=tk.BOTTOM)
 
 
-class Routine:
-    """Some thing that sometimes should be done, like sports or cleaning"""
+class ObjectFrame(ABC):
+    """Abstract class. Parent of Routine, Pleasure etc"""
 
     def __init__(self, master, dictionary):
         self.dictionary = dictionary
-        self.name = dictionary["name"]
         self.frame = tk.Frame(master)
+
+    @abstractmethod
+    def pack(self):
+        pass
+
+    @abstractmethod
+    def destroy(self):
+        pass
+
+
+class Routine(ObjectFrame):
+    """Some thing that sometimes should be done, like sports or cleaning"""
+
+    def __init__(self, master, dictionary):
+        super().__init__(master, dictionary)
+        self.name = dictionary["name"]
         self.check_buttons = []
         for index in range(len(get_work_blocks())):
             self.check_buttons.append(IndexCheckbutton(index, self))
@@ -213,13 +227,13 @@ class IndexCheckbutton:
         write_json_data(data)
 
 
-class Pleasure:
+class Pleasure(ObjectFrame):
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
     def __init__(self, master, dictionary):
+        super().__init__(master, dictionary)
         self.name = dictionary['name']
         self.probability = tk.IntVar(value=dictionary['probability'])
-        self.frame = tk.Frame(master)
         self.label = tk.Label(self.frame, text=self.name)
         self.entry = tk.Entry(self.frame, width=3, textvariable=self.probability)
         self.probability.trace('w', lambda *args: self.__update_json())
@@ -266,12 +280,11 @@ class Pleasure:
         write_pleasures(pleasures)
 
 
-class Paragraph:
+class Paragraph(ObjectFrame):
     """Paragraph of schedule"""
 
     def __init__(self, master, dictionary):
-        self.frame = tk.Frame(master)
-        self.dictionary = dictionary
+        super().__init__(master, dictionary)
         self.text = self.__get_string()
         self.label = tk.Label(self.frame, text=self.text)
         self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
@@ -301,14 +314,13 @@ class Paragraph:
         self.frame.destroy()
 
 
-class WorkBlock:
+class WorkBlock(ObjectFrame):
     """
     Work block
     schedule paragraph which will be randomly filled with routines and work times"""
 
     def __init__(self, master, dictionary):
-        self.frame = tk.Frame(master)
-        self.dictionary = dictionary
+        super().__init__(master, dictionary)
         self.text = self.__get_string()
         self.label = tk.Label(self.frame, text=self.text)
         self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
@@ -383,7 +395,6 @@ class TimeGetter:
 
 class NumberGetter:
     """Entry for getting a number"""
-    # TODO Replace with TimeGetter when used for gaining time
     def __init__(self, window, text):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
@@ -653,11 +664,5 @@ if not isfile("data.json"):
     write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}})
 
 Main()
-
-# TODO Архитектура. Или печатаешь, или возвращаешь
-# TODO очистка планов при перезаписи
-
-# TODO GUI
-#  TODO Удаление старых удовольствий
 
 # TODO Пофиксить баг, который может случиться, если на одноразовую рутину не хватает времени
