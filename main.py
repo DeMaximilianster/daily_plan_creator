@@ -98,6 +98,7 @@ class Frame(ABC):
         self.name = name
         self.main = main
         self.frame = tk.LabelFrame(main.main_window, text=name)
+        self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
         self.pack()
 
     @abstractmethod
@@ -113,17 +114,42 @@ class Frame(ABC):
         self.pack()
 
 
-class PleasuresFrame(Frame):
+class PleasuresFrame:
+
+    def __init__(self, main: Main, name: str):
+        self.name = name
+        self.main = main
+        self.frame = tk.LabelFrame(main.main_window, text=name)
+        self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
+        self.pack()
 
     def pack(self):
-        pleasures_dictionary = get_pleasures()
-        for pleasure in pleasures_dictionary:
-            pleasure_object = Pleasure(self.frame, pleasures_dictionary[pleasure])
-            pleasure_object.pack()
+        self.fill_listbox()
         add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
                                  command=lambda: PleasureGetter(self.main).pack())
+        change_pleasure = tk.Button(self.frame, text="Редактировать удовольствие", state=tk.DISABLED,
+                                    command=self.change_pleasure_window)
+        self.listbox.bind("<Button-1>", lambda _: change_pleasure.configure(state=tk.NORMAL))
         self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        self.listbox.pack(side=tk.TOP)
         add_pleasure.pack(side=tk.BOTTOM)
+        change_pleasure.pack(side=tk.BOTTOM)
+
+    def fill_listbox(self):
+        pleasures_dictionary = get_pleasures()
+        for pleasure in pleasures_dictionary:
+            pleasure_object = Pleasure(pleasures_dictionary[pleasure])
+            self.listbox.insert(tk.END, pleasure_object.get_string())
+
+    def update(self):
+        self.listbox.delete(0, tk.END)
+        self.fill_listbox()
+
+    def change_pleasure_window(self):
+        dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
+        print(self.listbox.curselection())
+        print(dictionary)
+        PleasureGetter(self.main, **dictionary).pack()
 
 
 class ScheduleFrame(Frame):
@@ -227,15 +253,12 @@ class IndexCheckbutton:
         write_json_data(data)
 
 
-class Pleasure(ObjectFrame):
+class Pleasure:
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
-    def __init__(self, master, dictionary):
-        super().__init__(master, dictionary)
+    def __init__(self, dictionary: dict):
         self.name = dictionary['name']
         self.probability = tk.IntVar(value=dictionary['probability'])
-        self.label = tk.Label(self.frame, text=self.name)
-        self.entry = tk.Entry(self.frame, width=3, textvariable=self.probability)
         self.probability.trace('w', lambda *args: self.__update_json())
 
     def get_probability(self) -> int:
@@ -256,19 +279,6 @@ class Pleasure(ObjectFrame):
         self.probability.set(self.get_probability()-1)
         self.__update_json()
 
-    def pack(self):
-        """Pack a pleasure"""
-        self.frame.pack(anchor=tk.E)
-        self.label.pack(side=tk.LEFT)
-        self.entry.pack(side=tk.LEFT)
-        tk.Button(self.frame, text='+', width=1, height=1,
-                  command=self.increase_probability).pack(side=tk.LEFT)
-        tk.Button(self.frame, text='-', width=1, height=1,
-                  command=self.decrease_probability).pack(side=tk.LEFT)
-
-    def destroy(self):
-        self.frame.destroy()
-
     def dictionary(self):
         """Get data about pleasure as dictionary"""
         return {"name": self.name, "probability": self.get_probability()}
@@ -278,6 +288,9 @@ class Pleasure(ObjectFrame):
         pleasures = get_pleasures()
         pleasures[self.name] = self.dictionary()
         write_pleasures(pleasures)
+
+    def get_string(self):
+        return "{:30s} {:3d}%".format(self.name, self.probability.get())
 
 
 class Paragraph(ObjectFrame):
@@ -353,10 +366,12 @@ class WorkBlock(ObjectFrame):
 class NameGetter:
     """Entry for name of something"""
 
-    def __init__(self, window):
+    def __init__(self, window, name=''):
         self.name_frame = tk.Frame(window)
         self.name_label = tk.Label(self.name_frame, text="Название")
         self.name_entry = tk.Entry(self.name_frame)
+        if name:
+            self.name_entry.insert(tk.END, name)
 
     def pack(self):
         """Pack the frame"""
@@ -395,10 +410,12 @@ class TimeGetter:
 
 class NumberGetter:
     """Entry for getting a number"""
-    def __init__(self, window, text):
+    def __init__(self, window, text, default_number=''):
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
         self.duration_entry = tk.Entry(self.frame, width=3)
+        if default_number:
+            self.duration_entry.insert(tk.END, default_number)
 
     def pack(self):
         """Pack a frame"""
@@ -438,10 +455,10 @@ class ObjectGetter(ABC):
 class PleasureGetter(ObjectGetter):
     """Window with entries for pleasure"""
 
-    def __init__(self, master: Main):
+    def __init__(self, master: Main, name='', probability=''):
         super().__init__(master)
-        self.name_frame = NameGetter(self.window)
-        self.probability = NumberGetter(self.window, "Вероятность")
+        self.name_frame = NameGetter(self.window, name)
+        self.probability = NumberGetter(self.window, "Вероятность", probability)
 
     def pack(self):
         self.name_frame.pack()
@@ -619,6 +636,14 @@ def get_table_column(worksheet, day_today):
             break
         column += 1
     return column
+
+
+def create_pleasure_dict_by_string(string: str) -> dict:
+    dictionary = dict()
+    list_of_words = string.split()
+    dictionary["name"] = ' '.join(list_of_words[:-1])  # ['Junk', 'Food', '5%'] -> 'Junk Food'
+    dictionary["probability"] = int(list_of_words[-1][:-1])  # ['Junk', 'Food', '5%'] -> 5
+    return dictionary
 
 
 def get_json_data():
