@@ -114,26 +114,54 @@ class Frame(ABC):
         self.pack()
 
 
-class PleasuresFrame:
+class NewFrame(ABC):
 
     def __init__(self, main: Main, name: str):
         self.name = name
         self.main = main
         self.frame = tk.LabelFrame(main.main_window, text=name)
         self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
+        self.redact_button = None
+        self.delete_button = None
         self.pack()
 
+    @abstractmethod
     def pack(self):
         self.fill_listbox()
-        add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
-                                 command=lambda: PleasureGetter(self.main).pack())
-        change_pleasure = tk.Button(self.frame, text="Редактировать удовольствие", state=tk.DISABLED,
-                                    command=self.change_pleasure_window)
-        self.listbox.bind("<Button-1>", lambda _: change_pleasure.configure(state=tk.NORMAL))
         self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
         self.listbox.pack(side=tk.TOP)
+
+    @abstractmethod
+    def fill_listbox(self):
+        pass
+
+    def update(self):
+        self.listbox.delete(0, tk.END)
+        self.fill_listbox()
+
+    def activate_disabled_buttons(self):
+        self.redact_button.configure(state=tk.NORMAL)
+        self.delete_button.configure(state=tk.NORMAL)
+
+    def disable_buttons(self):
+        self.redact_button.configure(state=tk.DISABLED)
+        self.delete_button.configure(state=tk.DISABLED)
+
+
+class PleasuresFrame(NewFrame):
+
+    def pack(self):
+        super().pack()
+        self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
+        add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
+                                 command=lambda: PleasureGetter(self.main).pack())
+        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+                                    command=self.change_pleasure_window)
+        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+                                       command=self.delete_pleasure)
         add_pleasure.pack(side=tk.BOTTOM)
-        change_pleasure.pack(side=tk.BOTTOM)
+        self.redact_button.pack(side=tk.BOTTOM)
+        self.delete_button.pack(side=tk.BOTTOM)
 
     def fill_listbox(self):
         pleasures_dictionary = get_pleasures()
@@ -141,27 +169,29 @@ class PleasuresFrame:
             pleasure_object = Pleasure(pleasures_dictionary[pleasure])
             self.listbox.insert(tk.END, pleasure_object.get_string())
 
-    def update(self):
-        self.listbox.delete(0, tk.END)
-        self.fill_listbox()
-
     def change_pleasure_window(self):
         dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
-        print(self.listbox.curselection())
-        print(dictionary)
         PleasureGetter(self.main, **dictionary).pack()
 
+    def delete_pleasure(self):
+        data = get_json_data()
+        dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
+        self.listbox.delete(tk.ACTIVE)
+        self.disable_buttons()
+        data['pleasures'].pop(dictionary['name'])
+        write_json_data(data)
 
-class ScheduleFrame(Frame):
+
+class ScheduleFrame(NewFrame):
+
     def pack(self):
         """Create schedule frame"""
-        schedule_list = get_schedule() + get_work_blocks()
-        schedule_list.sort(key=lambda x: x['start'])
-        for paragraph in schedule_list:
-            if 'duration' in paragraph.keys():
-                WorkBlock(self.frame, paragraph).pack()
-            else:
-                Paragraph(self.frame, paragraph).pack()
+        super().pack()
+        self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
+        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+                                       command=self.redact_schedule)
+        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+                                       command=self.delete_paragraph_or_work_block)
         add_schedule_paragraph = tk.Button(self.frame, text="Добавить пункт плана",
                                            command=lambda: ParagraphGetter(self.main).pack())
         add_work_block = tk.Button(self.frame, text="Добавить блок работы",
@@ -169,6 +199,37 @@ class ScheduleFrame(Frame):
         self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
         add_schedule_paragraph.pack(side=tk.BOTTOM)
         add_work_block.pack(side=tk.BOTTOM)
+        self.redact_button.pack(side=tk.BOTTOM)
+        self.delete_button.pack(side=tk.BOTTOM)
+
+    def fill_listbox(self):
+        schedule_list = get_schedule() + get_work_blocks()
+        schedule_list.sort(key=lambda x: x['start'])
+        for paragraph in schedule_list:
+            if 'duration' in paragraph.keys():
+                work_block = WorkBlock(paragraph)
+                self.listbox.insert(tk.END, work_block.get_string())
+            else:
+                paragraph = Paragraph(paragraph)
+                self.listbox.insert(tk.END, paragraph.get_string())
+
+    def redact_schedule(self):
+        dictionary = create_work_block_or_paragraph_dict_by_string(self.listbox.get(tk.ACTIVE))
+        if 'duration' in dictionary:
+            WorkBlockGetter(self.main, **dictionary).pack()
+        else:
+            ParagraphGetter(self.main, **dictionary).pack()
+
+    def delete_paragraph_or_work_block(self):
+        data = get_json_data()
+        dictionary = create_work_block_or_paragraph_dict_by_string(self.listbox.get(tk.ACTIVE))
+        self.listbox.delete(tk.ACTIVE)
+        self.disable_buttons()
+        if 'duration' in dictionary:
+            data['work_blocks'].remove(dictionary)
+        else:
+            data['schedule'].remove(dictionary)
+        write_json_data(data)
 
 
 class RoutinesFrame(Frame):
@@ -195,6 +256,13 @@ class ObjectFrame(ABC):
 
     @abstractmethod
     def destroy(self):
+        pass
+
+
+class NewObjectFrame(ABC):
+
+    @abstractmethod
+    def get_string(self):
         pass
 
 
@@ -253,7 +321,7 @@ class IndexCheckbutton:
         write_json_data(data)
 
 
-class Pleasure:
+class Pleasure(NewObjectFrame):
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
     def __init__(self, dictionary: dict):
@@ -269,16 +337,6 @@ class Pleasure:
             probability = 0
         return probability
 
-    def increase_probability(self):
-        """Increase probability of pleasure allowance"""
-        self.probability.set(self.get_probability()+1)
-        self.__update_json()
-
-    def decrease_probability(self):
-        """Decrease probability of pleasure allowance"""
-        self.probability.set(self.get_probability()-1)
-        self.__update_json()
-
     def dictionary(self):
         """Get data about pleasure as dictionary"""
         return {"name": self.name, "probability": self.get_probability()}
@@ -293,74 +351,46 @@ class Pleasure:
         return "{:30s} {:3d}%".format(self.name, self.probability.get())
 
 
-class Paragraph(ObjectFrame):
+class Paragraph(NewObjectFrame):
     """Paragraph of schedule"""
 
-    def __init__(self, master, dictionary):
-        super().__init__(master, dictionary)
-        self.text = self.__get_string()
-        self.label = tk.Label(self.frame, text=self.text)
-        self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
+    def __init__(self, dictionary):
+        self.name = dictionary["name"]
+        self.start = dictionary["start"]
+        self.end = dictionary["end"]
+        self.text = self.get_string()
 
-    def __get_string(self) -> str:
+    def dictionary(self):
+        return {"name": self.name, "start": self.start, "end": self.end}
+
+    def get_string(self) -> str:
         """Get string with paragraph info"""
-        name = self.dictionary['name']
-        start_time = self.dictionary['start']
-        start_str = minutes_to_time(start_time)
-        end_time = self.dictionary['end']
-        if start_time != end_time:
-            end_str = minutes_to_time(end_time)
-            return "{} - {} {}".format(start_str, end_str, name)
-        return "{} {}".format(start_str, name)
-
-    def pack(self):
-        """Pack paragraph"""
-        self.frame.pack()
-        self.label.pack(side=tk.LEFT)
-        self.delete_button.pack(side=tk.RIGHT)
-
-    def destroy(self):
-        """Destroy paragraph"""
-        data = get_json_data()
-        data['schedule'].remove(self.dictionary)
-        write_json_data(data)
-        self.frame.destroy()
+        start_str = minutes_to_time(self.start)
+        if self.start != self.end:
+            end_str = minutes_to_time(self.end)
+            return "{} - {} {}".format(start_str, end_str, self.name)
+        return "{} {}".format(start_str, self.name)
 
 
-class WorkBlock(ObjectFrame):
+class WorkBlock(NewObjectFrame):
     """
     Work block
     schedule paragraph which will be randomly filled with routines and work times"""
 
-    def __init__(self, master, dictionary):
-        super().__init__(master, dictionary)
-        self.text = self.__get_string()
-        self.label = tk.Label(self.frame, text=self.text)
-        self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
+    def __init__(self, dictionary):
+        self.start = dictionary['start']
+        self.end = dictionary['end']
+        self.duration = dictionary['duration']
+        self.text = self.get_string()
 
-    def __get_string(self) -> str:
+    def get_string(self) -> str:
         """Get a string with work block info"""
-        duration = minutes_to_time(self.dictionary['duration'])
-        start_time = self.dictionary['start']
-        start_str = minutes_to_time(start_time)
-        end_time = self.dictionary['end']
-        if start_time != end_time:
-            end_str = minutes_to_time(end_time)
+        duration = minutes_to_time(self.duration)
+        start_str = minutes_to_time(self.start)
+        if self.start != self.end:
+            end_str = minutes_to_time(self.end)
             return "{} - {} Блок работы [{}]".format(start_str, end_str, duration)
         return "{} Блок работы [{}]".format(start_str, duration)
-
-    def pack(self):
-        """Pack work block"""
-        self.frame.pack()
-        self.label.pack(side=tk.LEFT)
-        self.delete_button.pack(side=tk.RIGHT)
-
-    def destroy(self):
-        """Destroy work block"""
-        data = get_json_data()
-        data['work_blocks'].remove(self.dictionary)
-        write_json_data(data)
-        self.frame.destroy()
 
 
 class NameGetter:
@@ -387,13 +417,15 @@ class NameGetter:
 class TimeGetter:
     """Entry for time of something"""
 
-    def __init__(self, window, text):
+    def __init__(self, window, text, time=0):
+        minutes = time % 60
+        hours = time // 60
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
         self.hours_entry = ttk.Combobox(self.frame, values=list(range(0, 25)), width=2)
-        self.hours_entry.current(0)  # choose zero as a default hour
+        self.hours_entry.current(hours)  # choose zero as a default hour
         self.minutes_entry = ttk.Combobox(self.frame, values=list(range(0, 60, 5)), width=2)
-        self.minutes_entry.current(0)  # choose zero as a default minute
+        self.minutes_entry.current(minutes)  # choose zero as a default minute
 
     def pack(self):
         """Pack frame"""
@@ -486,11 +518,12 @@ class PleasureGetter(ObjectGetter):
 class ParagraphGetter(ObjectGetter):
     """Window with entries for schedule paragraph"""
 
-    def __init__(self, master: Main):
+    def __init__(self, master: Main, name='', start=0, end=0):
         super().__init__(master)
-        self.name_frame = NameGetter(self.window)
-        self.start_frame = TimeGetter(self.window, "Начало")
-        self.end_frame = TimeGetter(self.window, "Конец")
+        self.old_paragraph = {"name": name, "start": start, "end": end}
+        self.name_frame = NameGetter(self.window, name)
+        self.start_frame = TimeGetter(self.window, "Начало", start)
+        self.end_frame = TimeGetter(self.window, "Конец", end)
 
     def pack(self):
         """Create a window and run it"""
@@ -503,6 +536,8 @@ class ParagraphGetter(ObjectGetter):
         """Write data about schedule paragraph into json"""
         paragraph = self.paragraph()
         data = get_json_data()
+        if self.old_paragraph in data['schedule']:
+            data['schedule'].remove(self.old_paragraph)
         data['schedule'].append(paragraph)
         write_json_data(data)
         self.master.schedule_frame.update()
@@ -552,11 +587,12 @@ class RoutineGetter(ObjectGetter):
 class WorkBlockGetter(ObjectGetter):
     """Window with entries for work block"""
 
-    def __init__(self, master: Main):
+    def __init__(self, master: Main, start=0, end=0, duration=0):
         super().__init__(master)
-        self.start_frame = TimeGetter(self.window, "Начало")
-        self.end_frame = TimeGetter(self.window, "Конец")
-        self.duration_frame = TimeGetter(self.window, "Длительность")
+        self.old_work_block = {"start": start, "end": end, "duration": duration}
+        self.start_frame = TimeGetter(self.window, "Начало", start)
+        self.end_frame = TimeGetter(self.window, "Конец", end)
+        self.duration_frame = TimeGetter(self.window, "Длительность", duration)
 
     def pack(self):
         """Create a new window and run it"""
@@ -569,6 +605,8 @@ class WorkBlockGetter(ObjectGetter):
         """Write data about work block into json"""
         paragraph = self.paragraph()
         data = get_json_data()
+        if self.old_work_block in data['work_blocks']:
+            data['work_blocks'].remove(self.old_work_block)
         data['work_blocks'].append(paragraph)
         data['work_blocks'].sort(key=lambda x: x['start'])
         write_json_data(data)
@@ -584,8 +622,14 @@ class WorkBlockGetter(ObjectGetter):
 
 
 def minutes_to_time(minutes: int) -> str:
-    """Converts minutes to format [hh:mm]"""
+    """Converts minutes to format hh:mm"""
     return f'{minutes//60:0>2}:{minutes%60:0>2}'
+
+
+def time_to_minutes(time: str) -> int:
+    """Converts format hh:mm to minutes"""
+    list_of_numbers = time.split(sep=':')
+    return int(list_of_numbers[0])*60 + int(list_of_numbers[1])
 
 
 def routines_choose(number):
@@ -643,6 +687,23 @@ def create_pleasure_dict_by_string(string: str) -> dict:
     list_of_words = string.split()
     dictionary["name"] = ' '.join(list_of_words[:-1])  # ['Junk', 'Food', '5%'] -> 'Junk Food'
     dictionary["probability"] = int(list_of_words[-1][:-1])  # ['Junk', 'Food', '5%'] -> 5
+    return dictionary
+
+
+def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
+    dictionary = dict()
+    list_of_words = string.split()
+    dictionary['start'] = time_to_minutes(list_of_words[0])
+    list_of_words = list_of_words[1:]  # Removing first word which is a start time
+    if list_of_words[0] == '-':
+        dictionary['end'] = time_to_minutes(list_of_words[1])
+        list_of_words = list_of_words[2:]  # Removing '-' and end time
+    else:
+        dictionary['end'] = dictionary['start']
+    if "Блок работы" in string:
+        dictionary['duration'] = time_to_minutes(list_of_words[-1][1:-1])  # Work block [hh:mm] -> minutes
+    else:
+        dictionary['name'] = ' '.join(list_of_words)
     return dictionary
 
 
