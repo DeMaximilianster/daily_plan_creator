@@ -566,17 +566,19 @@ class RoutineGetter(ObjectGetter):
 
     def from_off_listbox_to_on(self):
         work_block = self.off_listbox.get(tk.ACTIVE)
-        work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
-        self.active_work_blocks.append(work_block_index)
-        self.off_listbox.delete(tk.ACTIVE)
-        self.on_listbox.insert(tk.END, work_block)
+        if work_block:
+            work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+            self.active_work_blocks.append(work_block_index)
+            self.off_listbox.delete(tk.ACTIVE)
+            self.on_listbox.insert(tk.END, work_block)
 
     def from_on_listbox_to_off(self):
         work_block = self.on_listbox.get(tk.ACTIVE)
-        work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
-        self.active_work_blocks.remove(work_block_index)
-        self.on_listbox.delete(tk.ACTIVE)
-        self.off_listbox.insert(tk.END, work_block)
+        if work_block:
+            work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+            self.active_work_blocks.remove(work_block_index)
+            self.on_listbox.delete(tk.ACTIVE)
+            self.off_listbox.insert(tk.END, work_block)
 
 
 class WorkBlockGetter(ObjectGetter):
