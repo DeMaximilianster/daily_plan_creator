@@ -99,28 +99,6 @@ class Frame(ABC):
         self.main = main
         self.frame = tk.LabelFrame(main.main_window, text=name)
         self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
-        self.pack()
-
-    @abstractmethod
-    def pack(self):
-        pass
-
-    def clear(self):
-        for slave in self.frame.pack_slaves():
-            slave.destroy()
-
-    def update(self):
-        self.clear()
-        self.pack()
-
-
-class NewFrame(ABC):
-
-    def __init__(self, main: Main, name: str):
-        self.name = name
-        self.main = main
-        self.frame = tk.LabelFrame(main.main_window, text=name)
-        self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
         self.redact_button = None
         self.delete_button = None
         self.pack()
@@ -148,7 +126,7 @@ class NewFrame(ABC):
         self.delete_button.configure(state=tk.DISABLED)
 
 
-class PleasuresFrame(NewFrame):
+class PleasuresFrame(Frame):
 
     def pack(self):
         super().pack()
@@ -156,7 +134,7 @@ class PleasuresFrame(NewFrame):
         add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
                                  command=lambda: PleasureGetter(self.main).pack())
         self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
-                                    command=self.change_pleasure_window)
+                                       command=self.change_pleasure_window)
         self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
                                        command=self.delete_pleasure)
         add_pleasure.pack(side=tk.BOTTOM)
@@ -182,7 +160,7 @@ class PleasuresFrame(NewFrame):
         write_json_data(data)
 
 
-class ScheduleFrame(NewFrame):
+class ScheduleFrame(Frame):
 
     def pack(self):
         """Create schedule frame"""
@@ -234,32 +212,40 @@ class ScheduleFrame(NewFrame):
 
 class RoutinesFrame(Frame):
     def pack(self):
-        routines_dict = get_routines()
-        for routine in routines_dict.keys():
-            Routine(self.frame, routines_dict[routine]).pack()
+        self.listbox['width'] = 38
+        self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
+        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+                                       command=self.redact_routine)
+        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+                                       command=self.delete_routine)
+        self.fill_listbox()
         add_routine = tk.Button(self.frame, text="Добавить дело",
                                 command=lambda: RoutineGetter(self.main).pack())
         self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        self.listbox.pack()
         add_routine.pack(side=tk.BOTTOM)
+        self.redact_button.pack(side=tk.BOTTOM)
+        self.delete_button.pack(side=tk.BOTTOM)
+
+    def fill_listbox(self):
+        routines_dict = get_routines()
+        for routine in routines_dict.keys():
+            self.listbox.insert(tk.END, Routine(routines_dict[routine]).get_string())
+
+    def redact_routine(self):
+        dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
+        RoutineGetter(self.main, **dictionary).pack()
+
+    def delete_routine(self):
+        data = get_json_data()
+        dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
+        self.listbox.delete(tk.ACTIVE)
+        self.disable_buttons()
+        data['routines'].pop(dictionary['name'])
+        write_json_data(data)
 
 
 class ObjectFrame(ABC):
-    """Abstract class. Parent of Routine, Pleasure etc"""
-
-    def __init__(self, master, dictionary):
-        self.dictionary = dictionary
-        self.frame = tk.Frame(master)
-
-    @abstractmethod
-    def pack(self):
-        pass
-
-    @abstractmethod
-    def destroy(self):
-        pass
-
-
-class NewObjectFrame(ABC):
 
     @abstractmethod
     def get_string(self):
@@ -269,59 +255,22 @@ class NewObjectFrame(ABC):
 class Routine(ObjectFrame):
     """Some thing that sometimes should be done, like sports or cleaning"""
 
-    def __init__(self, master, dictionary):
-        super().__init__(master, dictionary)
+    def __init__(self, dictionary):
         self.name = dictionary["name"]
-        self.check_buttons = []
+        self.duration = dictionary["duration"]
+        self.active_work_blocks = dictionary["active_work_blocks"]
+
+    def get_string(self) -> str:
+        pluses_minuses = ''
         for index in range(len(get_work_blocks())):
-            self.check_buttons.append(IndexCheckbutton(index, self))
-        self.label = tk.Label(self.frame, text="{name} [{duration}]".format(**dictionary))
-        self.delete_button = tk.Button(self.frame, text='X', command=self.destroy)
-
-    def pack(self):
-        """Pack routine"""
-        self.frame.pack()
-        for check_button in self.check_buttons:
-            check_button.pack(side=tk.LEFT)
-        self.label.pack()
-        self.delete_button.pack(side=tk.LEFT)
-
-    def destroy(self):
-        """Delete routine"""
-        data = get_json_data()
-        data['routines'].pop(self.name)
-        write_json_data(data)
-        self.frame.destroy()
+            if index in self.active_work_blocks:
+                pluses_minuses += '+'
+            else:
+                pluses_minuses += '-'
+        return "{:23s}[{}] {}".format(self.name, minutes_to_time(self.duration), pluses_minuses)
 
 
-class IndexCheckbutton:
-    """Upgraded checkbutton which has its index"""
-
-    def __init__(self, index, master: Routine):
-        self.master = master
-        self.index = index
-        self.variable = tk.BooleanVar(master.frame,
-                                      value=index in master.dictionary['active_work_blocks'])
-        self.check_button = tk.Checkbutton(master.frame,
-                                           variable=self.variable, onvalue=1, offvalue=0,
-                                           command=self.change_state)
-
-    def pack(self, side):
-        """Pack checkbutton"""
-        self.check_button.pack(side=side)
-
-    def change_state(self):
-        """Trigger for clicking checkbutton"""
-        data = get_json_data()
-        name = self.master.dictionary['name']
-        if self.variable.get():
-            data['routines'][name]['active_work_blocks'].append(self.index)
-        else:
-            data['routines'][name]['active_work_blocks'].remove(self.index)
-        write_json_data(data)
-
-
-class Pleasure(NewObjectFrame):
+class Pleasure(ObjectFrame):
     """Pleasure which can be forbidden for the sake of dopamine quality"""
 
     def __init__(self, dictionary: dict):
@@ -351,7 +300,7 @@ class Pleasure(NewObjectFrame):
         return "{:30s} {:3d}%".format(self.name, self.probability.get())
 
 
-class Paragraph(NewObjectFrame):
+class Paragraph(ObjectFrame):
     """Paragraph of schedule"""
 
     def __init__(self, dictionary):
@@ -372,7 +321,7 @@ class Paragraph(NewObjectFrame):
         return "{} {}".format(start_str, self.name)
 
 
-class WorkBlock(NewObjectFrame):
+class WorkBlock(ObjectFrame):
     """
     Work block
     schedule paragraph which will be randomly filled with routines and work times"""
@@ -420,12 +369,14 @@ class TimeGetter:
     def __init__(self, window, text, time=0):
         minutes = time % 60
         hours = time // 60
+        minutes_list = list(range(0, 60, 5))
+        hours_list = list(range(0, 25))
         self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
-        self.hours_entry = ttk.Combobox(self.frame, values=list(range(0, 25)), width=2)
-        self.hours_entry.current(hours)  # choose zero as a default hour
-        self.minutes_entry = ttk.Combobox(self.frame, values=list(range(0, 60, 5)), width=2)
-        self.minutes_entry.current(minutes)  # choose zero as a default minute
+        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2)
+        self.hours_entry.current(hours_list.index(hours))  # choose zero as a default hour
+        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2)
+        self.minutes_entry.current(minutes_list.index(minutes))  # choose zero as a default minute
 
     def pack(self):
         """Pack frame"""
@@ -553,15 +504,33 @@ class ParagraphGetter(ObjectGetter):
 class RoutineGetter(ObjectGetter):
     """Window with entries for routine"""
 
-    def __init__(self, master: Main):
+    def __init__(self, master: Main, name='', duration=0, active_work_blocks=None):
         super().__init__(master)
-        self.name_frame = NameGetter(self.window)
-        self.duration_frame = TimeGetter(self.window, "Длительность")
+        if active_work_blocks is None:
+            active_work_blocks = []
+        self.name_frame = NameGetter(self.window, name)
+        self.duration_frame = TimeGetter(self.window, "Длительность", duration)
+        self.active_work_blocks = active_work_blocks
+
+        self.bottom_frame = tk.Frame(self.window)
+        self.off_frame = tk.LabelFrame(self.bottom_frame, text="Дело не попадёт в эти блоки работы")
+        self.off_listbox = tk.Listbox(self.off_frame, width=40)
+
+        self.on_frame = tk.LabelFrame(self.bottom_frame, text="Дело попадёт в одно из этих блоков работы")
+        self.on_listbox = tk.Listbox(self.on_frame, width=40)
 
     def pack(self):
         """Create a new window and run it"""
         self.name_frame.pack()
         self.duration_frame.pack()
+        self.bottom_frame.pack(side=tk.TOP)
+        self.off_frame.pack(side=tk.LEFT)
+        self.off_listbox.pack()
+        self.off_listbox.bind("<Button-1>", lambda _: self.from_off_listbox_to_on())
+        self.on_frame.pack(side=tk.RIGHT)
+        self.on_listbox.pack()
+        self.on_listbox.bind("<Button-1>", lambda _: self.from_on_listbox_to_off())
+        self.fill_listboxes()
         super().pack()
 
     def append_to_json(self):
@@ -577,11 +546,37 @@ class RoutineGetter(ObjectGetter):
         """Get routine properties as dictionary"""
         return {"name": self.name(),
                 "duration": self.duration_frame.time(),
-                "active_work_blocks": []}
+                "active_work_blocks": self.active_work_blocks}
+
+    def fill_listboxes(self):
+        work_blocks = get_work_blocks()
+        index = 0
+        for work_block in work_blocks:
+            work_block_object = WorkBlock(work_block)
+            work_block_string = '{}. {}'.format(index+1, work_block_object.get_string())
+            if index in self.active_work_blocks:
+                self.on_listbox.insert(tk.END, work_block_string)
+            else:
+                self.off_listbox.insert(tk.END, work_block_string)
+            index += 1
 
     def name(self) -> str:
         """Get the name of routine"""
         return self.name_frame.name()
+
+    def from_off_listbox_to_on(self):
+        work_block = self.off_listbox.get(tk.ACTIVE)
+        work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+        self.active_work_blocks.append(work_block_index)
+        self.off_listbox.delete(tk.ACTIVE)
+        self.on_listbox.insert(tk.END, work_block)
+
+    def from_on_listbox_to_off(self):
+        work_block = self.on_listbox.get(tk.ACTIVE)
+        work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+        self.active_work_blocks.remove(work_block_index)
+        self.on_listbox.delete(tk.ACTIVE)
+        self.off_listbox.insert(tk.END, work_block)
 
 
 class WorkBlockGetter(ObjectGetter):
@@ -704,6 +699,18 @@ def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
         dictionary['duration'] = time_to_minutes(list_of_words[-1][1:-1])  # Work block [hh:mm] -> minutes
     else:
         dictionary['name'] = ' '.join(list_of_words)
+    return dictionary
+
+
+def create_routine_dict_by_string(string: str) -> dict:
+    dictionary = dict()
+    list_of_words = string.split()
+    dictionary['name'] = ' '.join(list_of_words[:-2])
+    dictionary['duration'] = time_to_minutes(list_of_words[-2][1:-1])  # 'A B C [01:30] +++' -> 90
+    dictionary['active_work_blocks'] = []
+    for index in range(len(list_of_words[-1])):
+        if list_of_words[-1][index] == '+':
+            dictionary['active_work_blocks'].append(index)
     return dictionary
 
 
