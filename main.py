@@ -15,20 +15,39 @@ class Main:
 
     def __init__(self):
         self.main_window = tk.Tk()
-        self.main_window.resizable(0, 0)
-        self.pleasures_frame = PleasuresFrame(self, "Удовольствия")
-        self.schedule_frame = ScheduleFrame(self, "Расписание")
-        self.routines_frame = RoutinesFrame(self, "Дела")
+        self.main_window.resizable(0, 0)  # user can't change size of a main window
+
+        self.left_frame = tk.Frame()
+        self.pleasures_frame = PleasuresFrame(self, self.left_frame, "Удовольствия")
+        self.activities_frame = ActivitiesFrame(self, self.left_frame, "Занятия")
+
+        self.right_frame = tk.Frame()
+        self.schedule_frame = ScheduleFrame(self, self.right_frame, "Расписание")
+        self.routines_frame = RoutinesFrame(self, self.right_frame, "Дела")
+
         self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
-                                   height=2, width=91)
+                                   height=2, width=62)
+        self.textbox = tk.Text(self.main_window, height=32, width=55)
+        self.__pack()
+
+    def __pack(self):
+        self.left_frame.pack(side=tk.LEFT, fill=tk.Y)
+        self.pleasures_frame.pack(tk.TOP, tk.N)
+        self.activities_frame.pack(tk.BOTTOM, tk.S)
+
+        self.right_frame.pack(side=tk.LEFT, fill=tk.Y)
+        self.schedule_frame.pack(tk.TOP, tk.N)
+        self.routines_frame.pack(tk.BOTTOM, tk.S)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
-        self.textbox = tk.Text(self.main_window)
         self.textbox.pack()
         self.main_window.mainloop()
 
     def __make_schedule(self):
         """Make a schedule based on options"""
-        self.textbox.delete('1.0', tk.END)
+        self.textbox.delete('1.0', tk.END)  # Clear text
+        activities = get_activities()
+        amount_of_activities = self.activities_frame.get_amount_of_activities()
+        chosen_activities = choose_activities(activities, amount_of_activities)
         routines = list(get_routines().values())
         routines.sort(key=lambda x: len(x['active_work_blocks']))
         work_blocks = get_work_blocks()
@@ -48,7 +67,7 @@ class Main:
             end_minute = schedule_paragraph['end']
             start_minute = schedule_paragraph['start']
             if 'duration' in schedule_paragraph.keys():  # work block
-                self.insert_work_block(schedule_paragraph, start_minute, end_minute)
+                self.insert_work_block(schedule_paragraph, start_minute, end_minute, chosen_activities)
             else:  # just a paragraph
                 self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
         for pleasure in get_pleasures().values():
@@ -65,7 +84,7 @@ class Main:
         else:
             self.textbox.insert(tk.END, "{} {}\n".format(start_str, name))
 
-    def insert_work_block(self, schedule_paragraph, start_minute, end_minute):
+    def insert_work_block(self, schedule_paragraph, start_minute, end_minute, activities):
         """Insert work block data to textbox"""
         minutes_of_work = schedule_paragraph['duration']
         sequence = schedule_paragraph['routines']
@@ -73,8 +92,12 @@ class Main:
         for routine in sequence:
             minutes_of_work -= routine['duration']
         while minutes_of_work >= 45:
+            if activities:
+                activity = choose_one_activity(activities)["name"]
+            else:
+                activity = "Любое занятие"
             time_block = choice(range(45, min(120, minutes_of_work) + 1, 15))
-            sequence.append({'name': "Цикл работы", 'duration': time_block})
+            sequence.append({'name': "Цикл работы [{}]".format(activity), 'duration': time_block})
             minutes_of_work -= time_block
         minutes_of_rest += minutes_of_work
         shuffle(sequence)
@@ -94,19 +117,18 @@ class Main:
 
 class Frame(ABC):
 
-    def __init__(self, main: Main, name: str):
+    def __init__(self, main: Main, master, name: str):
         self.name = name
         self.main = main
-        self.frame = tk.LabelFrame(main.main_window, text=name)
+        self.frame = tk.LabelFrame(master, text=name)
         self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
         self.redact_button = None
         self.delete_button = None
-        self.pack()
 
     @abstractmethod
-    def pack(self):
+    def pack(self, side, anchor):
         self.fill_listbox()
-        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
+        self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
         self.listbox.pack(side=tk.TOP)
 
     @abstractmethod
@@ -128,8 +150,8 @@ class Frame(ABC):
 
 class PleasuresFrame(Frame):
 
-    def pack(self):
-        super().pack()
+    def pack(self, side, anchor):
+        super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
                                  command=lambda: PleasureGetter(self.main).pack())
@@ -162,9 +184,9 @@ class PleasuresFrame(Frame):
 
 class ScheduleFrame(Frame):
 
-    def pack(self):
+    def pack(self, side, anchor):
         """Create schedule frame"""
-        super().pack()
+        super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
                                        command=self.redact_schedule)
@@ -174,7 +196,6 @@ class ScheduleFrame(Frame):
                                            command=lambda: ParagraphGetter(self.main).pack())
         add_work_block = tk.Button(self.frame, text="Добавить блок работы",
                                    command=lambda: WorkBlockGetter(self.main).pack())
-        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
         add_schedule_paragraph.pack(side=tk.BOTTOM)
         add_work_block.pack(side=tk.BOTTOM)
         self.redact_button.pack(side=tk.BOTTOM)
@@ -211,18 +232,16 @@ class ScheduleFrame(Frame):
 
 
 class RoutinesFrame(Frame):
-    def pack(self):
+    def pack(self, side, anchor):
+        super().pack(side, anchor)
         self.listbox['width'] = 38
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
                                        command=self.redact_routine)
         self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
                                        command=self.delete_routine)
-        self.fill_listbox()
         add_routine = tk.Button(self.frame, text="Добавить дело",
                                 command=lambda: RoutineGetter(self.main).pack())
-        self.frame.pack(side=tk.LEFT, anchor=tk.N, fill=tk.Y)
-        self.listbox.pack()
         add_routine.pack(side=tk.BOTTOM)
         self.redact_button.pack(side=tk.BOTTOM)
         self.delete_button.pack(side=tk.BOTTOM)
@@ -242,6 +261,59 @@ class RoutinesFrame(Frame):
         self.listbox.delete(tk.ACTIVE)
         self.disable_buttons()
         data['routines'].pop(dictionary['name'])
+        write_json_data(data)
+
+
+class ActivitiesFrame(Frame):
+
+    def __init__(self, main: Main, master, name: str):
+        super().__init__(main, master, name)
+        self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
+        self.activities_number_frame = tk.Frame(self.frame)
+        self.activities_number_label = tk.Label(self.activities_number_frame,
+                                                text="Сколько занятий будем делать:")
+        self.activities_number_combobox = ttk.Combobox(self.activities_number_frame, width=2,
+                                                       values=[0])
+        self.activities_number_combobox.current(0)
+        self.add_button = tk.Button(self.frame, text="Добавить занятие",
+                                    command=lambda: ActivityGetter(self.main).pack())
+        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+                                       command=self.redact_activity)
+        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+                                       command=self.delete_activity)
+
+    def update_combobox(self):
+        values = list(range(len(get_activities()) + 1))
+        self.activities_number_combobox['values'] = values
+
+    def get_amount_of_activities(self) -> int:
+        return int(self.activities_number_combobox.get())
+
+    def pack(self, side, anchor):
+        super().pack(side, anchor)
+        self.activities_number_frame.pack()
+        self.activities_number_label.pack(side=tk.LEFT)
+        self.activities_number_combobox.pack(side=tk.RIGHT)
+        self.add_button.pack(side=tk.BOTTOM)
+        self.redact_button.pack(side=tk.BOTTOM)
+        self.delete_button.pack(side=tk.BOTTOM)
+
+    def fill_listbox(self):
+        self.update_combobox()
+        activities_dict = get_activities()
+        for activity in activities_dict.keys():
+            self.listbox.insert(tk.END, Activity(activities_dict[activity]).get_string())
+
+    def redact_activity(self):
+        dictionary = create_activity_dict_by_string(self.listbox.get(tk.ACTIVE))
+        ActivityGetter(self.main, **dictionary).pack()
+
+    def delete_activity(self):
+        data = get_json_data()
+        dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
+        self.listbox.delete(tk.ACTIVE)
+        self.disable_buttons()
+        data['activities'].pop(dictionary['name'])
         write_json_data(data)
 
 
@@ -307,7 +379,6 @@ class Paragraph(ObjectFrame):
         self.name = dictionary["name"]
         self.start = dictionary["start"]
         self.end = dictionary["end"]
-        self.text = self.get_string()
 
     def dictionary(self):
         return {"name": self.name, "start": self.start, "end": self.end}
@@ -330,7 +401,6 @@ class WorkBlock(ObjectFrame):
         self.start = dictionary['start']
         self.end = dictionary['end']
         self.duration = dictionary['duration']
-        self.text = self.get_string()
 
     def get_string(self) -> str:
         """Get a string with work block info"""
@@ -340,6 +410,16 @@ class WorkBlock(ObjectFrame):
             end_str = minutes_to_time(self.end)
             return "{} - {} Блок работы [{}]".format(start_str, end_str, duration)
         return "{} Блок работы [{}]".format(start_str, duration)
+
+
+class Activity(ObjectFrame):
+
+    def __init__(self, dictionary):
+        self.name = dictionary["name"]
+        self.weight = dictionary["weight"]
+
+    def get_string(self) -> str:
+        return "{:30s} {:4d}".format(self.name, self.weight)
 
 
 class NameGetter:
@@ -618,6 +698,71 @@ class WorkBlockGetter(ObjectGetter):
                 "duration": self.duration_frame.time()}
 
 
+class ActivityGetter(ObjectGetter):
+    def __init__(self, master: Main, name='', weight=''):
+        super().__init__(master)
+        self.name_frame = NameGetter(self.window, name)
+        self.weight = NumberGetter(self.window, "Вес", weight)
+
+    def pack(self):
+        self.name_frame.pack()
+        self.weight.pack()
+        super().pack()
+
+    def append_to_json(self):
+        """Write data about activity to json"""
+        paragraph = self.paragraph()
+        data = get_json_data()
+        data['activities'][self.name_frame.name()] = paragraph
+        write_json_data(data)
+        self.master.activities_frame.update()
+        self.window.destroy()
+
+    def paragraph(self) -> dict:
+        """Get data about activity as dictionary"""
+        return {'name': self.name_frame.name(), 'weight': self.weight.time()}
+
+
+def choose_activities(activities: dict, number: int):
+    activities = dict(activities)  # this will make sure parameter activities won't be changed
+    chosen_activities = dict()
+    weight_sum = 0
+    for activity in activities.values():
+        weight_sum += activity["weight"]
+    #  Now we should choose *number* activities
+    for _ in range(number):
+        weight = randint(1, weight_sum)
+        # this logic provides probability #weight/weight_sum# to be chosen for each activity
+        for activity in activities:
+            if weight <= activities[activity]["weight"]:
+                chosen_activities[activity] = activities[activity]
+                weight_sum -= activities[activity]["weight"]
+                activities.pop(activity)
+                break
+            else:
+                weight -= activities[activity]["weight"]
+    return chosen_activities
+
+
+def choose_one_activity(activities):
+    activities = dict(activities)  # this will make sure parameter activities won't be changed
+    chosen_activity = dict()
+    weight_sum = 0
+    for activity in activities.values():
+        weight_sum += activity["weight"]
+    weight = randint(1, weight_sum)
+    # this logic provides probability #weight/weight_sum# to be chosen for each activity
+    for activity in activities:
+        if weight <= activities[activity]["weight"]:
+            chosen_activity = activities[activity]
+            weight_sum -= activities[activity]["weight"]
+            activities.pop(activity)
+            break
+        else:
+            weight -= activities[activity]["weight"]
+    return chosen_activity
+
+
 def minutes_to_time(minutes: int) -> str:
     """Converts minutes to format hh:mm"""
     return f'{minutes//60:0>2}:{minutes%60:0>2}'
@@ -627,19 +772,6 @@ def time_to_minutes(time: str) -> int:
     """Converts format hh:mm to minutes"""
     list_of_numbers = time.split(sep=':')
     return int(list_of_numbers[0])*60 + int(list_of_numbers[1])
-
-
-def routines_choose(number):
-    """This function is now used now but will be used in future. Don't touch"""
-    routines = dict()  # key: name of the routine. value: weigh
-    for _ in range(number):
-        weigh_sum = sum(routines.values())
-        for routine in routines:
-            if randint(1, weigh_sum) <= routines[routine]:
-                print(routine)
-                routines.pop(routine)
-                break
-            weigh_sum -= routines[routine]
 
 
 def display_schedule_table(schedule, forbidden_pleasures, day_tuple):
@@ -716,6 +848,14 @@ def create_routine_dict_by_string(string: str) -> dict:
     return dictionary
 
 
+def create_activity_dict_by_string(string: str) -> dict:
+    dictionary = dict()
+    list_of_words = string.split()
+    dictionary['name'] = ' '.join(list_of_words[:-1])
+    dictionary['weight'] = list_of_words[-1]
+    return dictionary
+
+
 def get_json_data():
     """Get all the data from json"""
     with open('data.json', 'r', encoding='utf-8') as file:
@@ -742,6 +882,11 @@ def get_work_blocks() -> list:
     return get_json_data()['work_blocks']
 
 
+def get_activities() -> dict:
+    """Get activities"""
+    return get_json_data()['activities']
+
+
 def write_json_data(data) -> None:
     """Update the json"""
     with open('data.json', 'w', encoding='utf-8') as file:
@@ -755,8 +900,21 @@ def write_pleasures(pleasures: dict) -> None:
     write_json_data(data)
 
 
+def update_data():
+    """Fill the database with missing keys"""
+    data = get_json_data()
+    for key in DEFAULT_DATA_DICT:
+        if key not in data.keys():
+            data[key] = DEFAULT_DATA_DICT[key]
+    write_json_data(data)
+
+
+DEFAULT_DATA_DICT = {"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}, "activities": {}}
 if not isfile("data.json"):
-    write_json_data({"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}})
+    write_json_data(DEFAULT_DATA_DICT)
+else:
+    update_data()
+
 
 Main()
 
