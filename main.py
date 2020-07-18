@@ -310,7 +310,7 @@ class ActivitiesFrame(Frame):
 
     def delete_activity(self):
         data = get_json_data()
-        dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
+        dictionary = create_activity_dict_by_string(self.listbox.get(tk.ACTIVE))
         self.listbox.delete(tk.ACTIVE)
         self.disable_buttons()
         data['activities'].pop(dictionary['name'])
@@ -701,6 +701,7 @@ class WorkBlockGetter(ObjectGetter):
 class ActivityGetter(ObjectGetter):
     def __init__(self, master: Main, name='', weight=''):
         super().__init__(master)
+        self.name = name
         self.name_frame = NameGetter(self.window, name)
         self.weight = NumberGetter(self.window, "Вес", weight)
 
@@ -713,6 +714,8 @@ class ActivityGetter(ObjectGetter):
         """Write data about activity to json"""
         paragraph = self.paragraph()
         data = get_json_data()
+        if self.name in data['activities'].keys():  # remove old entry
+            data['activities'].pop(self.name)
         data['activities'][self.name_frame.name()] = paragraph
         write_json_data(data)
         self.master.activities_frame.update()
