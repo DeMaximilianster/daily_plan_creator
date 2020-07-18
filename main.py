@@ -48,18 +48,34 @@ class Main:
         activities = get_activities()
         amount_of_activities = self.activities_frame.get_amount_of_activities()
         chosen_activities = choose_activities(activities, amount_of_activities)
+        work_blocks = get_work_blocks()
+        # Distribute routines between work blocks
         routines = list(get_routines().values())
         routines.sort(key=lambda x: len(x['active_work_blocks']))
-        work_blocks = get_work_blocks()
-        for work_block in work_blocks:
-            work_block['routines'] = []
-        for routine in routines:
-            active_work_blocks = routine['active_work_blocks']
-            if active_work_blocks:
-                index = choice(active_work_blocks)
-                work_block = dict(work_blocks[index])
-                work_block['routines'].append(routine)
-                work_blocks[index] = work_block
+        for _ in range(100):  # 100 trials of distribution
+            for work_block in work_blocks:
+                # Create a space in work block for routine entries (and clear it)
+                work_block['routines'] = []
+                work_block['time_left'] = work_block['duration']  # time in work block
+            for routine in routines:
+                active_work_blocks = routine['active_work_blocks']
+                if active_work_blocks:
+                    index = choice(active_work_blocks)
+                    work_block = dict(work_blocks[index])
+                    work_block['routines'].append(routine)
+                    work_block['time_left'] -= routine['duration']
+                    work_blocks[index] = work_block
+            # if work block duration is not exceeded by routines, then distribution completed successfully
+            if all(work_block['time_left'] >= 0 for work_block in work_blocks):
+                break
+            else:
+                continue
+        else:  # So after 100 trial distribution still failed
+            self.textbox.insert(tk.END, "Failed to create schedule\n"
+                                        "Make sure there are enough time\n"
+                                        "in work blocks for your routines\n"
+                                        "And then try again")
+            return  # Stop the function
 
         schedule_list = get_schedule() + work_blocks
         schedule_list.sort(key=lambda x: x['start'])
@@ -920,5 +936,3 @@ else:
 
 
 Main()
-
-# TODO Пофиксить баг, который может случиться, если на одноразовую рутину не хватает времени
