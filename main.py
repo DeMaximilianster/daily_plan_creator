@@ -269,9 +269,11 @@ class ScheduleFrame(Frame):
         self.disable_buttons()
         if 'duration' in dictionary:
             data['work_blocks'].remove(dictionary)
+            write_json_data(data)
+            self.main.routines_frame.clear_active_work_blocks()
         else:
             data['schedule'].remove(dictionary)
-        write_json_data(data)
+            write_json_data(data)
 
 
 class RoutinesFrame(Frame):
@@ -305,6 +307,13 @@ class RoutinesFrame(Frame):
         self.disable_buttons()
         data['routines'].pop(dictionary['name'])
         write_json_data(data)
+
+    def clear_active_work_blocks(self):
+        data = get_json_data()
+        for routine in data['routines']:
+            data['routines'][routine]['active_work_blocks'] = []
+        write_json_data(data)
+        self.update()
 
 
 class ActivitiesFrame(Frame):
