@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<strings>
+    <string key="pleasures">Удовольствия</string>
+    <string key="activities">Занятия</string>
+    <string key="schedule">Расписание</string>
+    <string key="tasks">Дела</string>
+    <string key="create_plan">Вперёд!</string>
+    <string key="failed_to_create">Не удалось создать расписание так как дела не вписываются в блоки работы</string>
+    <string key="pleasure_forbidden">Удовольствие [{}] запрещено</string>
+    <string key="any_activity">Любое занятие</string>
+    <string key="work_cycle">Цикл работы</string>
+    <string key="rest">Отдых</string>
+    <string key="redact">Редактировать</string>
+    <string key="delete">Удалить</string>
+    <string key="add_pleasure">Добавить удовольствие</string>
+    <string key="add_paragraph">Добавить пункт</string>
+    <string key="add_work_block">Добавить блок работы</string>
+    <string key="add_task">Добавить дело</string>
+    <string key="add_activity">Добавить занятие</string>
+    <string key="how_many_activities">Кол-во занятий в плане</string>
+    <string key="name">Название</string>
+    <string key="probability">Вероятность</string>
+    <string key="start">Начало</string>
+    <string key="end">Конец</string>
+    <string key="duration">Длительность</string>
+    <string key="won't_get_in">Дело не попадёт в эти блоки работы</string>
+    <string key="will_get_in">Дело попадёт в одно из этих блоков работы</string>
+    <string key="weight">Вес</string>
+    <string key="work_block">Блок работы</string>
+</strings>

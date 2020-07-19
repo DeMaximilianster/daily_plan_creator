@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<strings>
+    <string key="pleasures">Pleasures</string>
+    <string key="activities">Activities</string>
+    <string key="schedule">Schedule</string>
+    <string key="tasks">Tasks</string>
+    <string key="create_plan">Go!</string>
+    <string key="failed_to_create">Failed to create schedule bacause tasks don't fit to work blocks</string>
+    <string key="pleasure_forbidden">Pleasure [{}] is forbidden</string>
+    <string key="any_activity">Any activity</string>
+    <string key="work_cycle">Work cycle</string>
+    <string key="rest">Rest</string>
+    <string key="redact">Redact</string>
+    <string key="delete">Delete</string>
+    <string key="add_pleasure">Add pleasure</string>
+    <string key="add_paragraph">Add paragraph</string>
+    <string key="add_work_block">Add work block</string>
+    <string key="add_task">Add task</string>
+    <string key="add_activity">Add activity</string>
+    <string key="how_many_activities">Amount of activities in the plan</string>
+    <string key="name">Name</string>
+    <string key="probability">Probability</string>
+    <string key="start">Start</string>
+    <string key="end">End</string>
+    <string key="duration">Duration</string>
+    <string key="won't_get_in">Task won't get in there work blocks</string>
+    <string key="will_get_in">Task will get in one of there work blocks</string>
+    <string key="weight">Weight</string>
+    <string key="work_block">Work block</string>
+</strings>

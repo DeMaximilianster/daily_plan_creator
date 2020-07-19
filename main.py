@@ -7,6 +7,7 @@ import json
 import tkinter as tk
 from tkinter import ttk
 from os.path import isfile
+import xml.etree.ElementTree as ElTr
 from openpyxl import load_workbook
 
 
@@ -15,17 +16,18 @@ class Main:
 
     def __init__(self):
         self.main_window = tk.Tk()
+        self.main_window.title("Daily plan creator")
         self.main_window.resizable(0, 0)  # user can't change size of a main window
 
         self.left_frame = tk.Frame()
-        self.pleasures_frame = PleasuresFrame(self, self.left_frame, "Удовольствия")
-        self.activities_frame = ActivitiesFrame(self, self.left_frame, "Занятия")
+        self.pleasures_frame = PleasuresFrame(self, self.left_frame, TEXT['pleasures'])
+        self.activities_frame = ActivitiesFrame(self, self.left_frame, TEXT['activities'])
 
         self.right_frame = tk.Frame()
-        self.schedule_frame = ScheduleFrame(self, self.right_frame, "Расписание")
-        self.routines_frame = RoutinesFrame(self, self.right_frame, "Дела")
+        self.schedule_frame = ScheduleFrame(self, self.right_frame, TEXT['schedule'])
+        self.routines_frame = RoutinesFrame(self, self.right_frame, TEXT['tasks'])
 
-        self.go_button = tk.Button(self.main_window, text='Вперёд!', command=self.__make_schedule,
+        self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'], command=self.__make_schedule,
                                    height=2, width=62)
         self.textbox = tk.Text(self.main_window, height=32, width=55)
         self.__pack()
@@ -71,10 +73,7 @@ class Main:
             else:
                 continue
         else:  # So after 100 trial distribution still failed
-            self.textbox.insert(tk.END, "Failed to create schedule\n"
-                                        "Make sure there are enough time\n"
-                                        "in work blocks for your routines\n"
-                                        "And then try again")
+            self.textbox.insert(tk.END, TEXT['faided_to_create'])
             return  # Stop the function
 
         schedule_list = get_schedule() + work_blocks
@@ -88,7 +87,7 @@ class Main:
                 self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
         for pleasure in get_pleasures().values():
             if random() * 100 > pleasure['probability']:
-                self.textbox.insert(tk.END, "Удовольствие [{}] запрещено\n".format(pleasure['name']))
+                self.textbox.insert(tk.END, TEXT['pleasure_forbidden'].format(pleasure['name'])+'\n')
 
     def insert_paragraph(self, schedule_paragraph, start_minute, end_minute):
         """Insert paragraph data to textbox"""
@@ -111,13 +110,13 @@ class Main:
             if activities:
                 activity = choose_one_activity(activities)["name"]
             else:
-                activity = "Любое занятие"
+                activity = TEXT['any_activity']
             time_block = choice(range(45, min(120, minutes_of_work) + 1, 15))
-            sequence.append({'name': "Цикл работы [{}]".format(activity), 'duration': time_block})
+            sequence.append({'name': TEXT["work_cycle"].format(activity), 'duration': time_block})
             minutes_of_work -= time_block
         minutes_of_rest += minutes_of_work
         shuffle(sequence)
-        sequence.append({'name': "Отдых", 'duration': minutes_of_rest})
+        sequence.append({'name': TEXT['rest'], 'duration': minutes_of_rest})
 
         for paragraph in sequence:
             start_str = minutes_to_time(start_minute)
@@ -129,6 +128,34 @@ class Main:
                 start_minute += paragraph['duration']
                 end_str = minutes_to_time(start_minute)
                 self.textbox.insert(tk.END, "{} - {} {}\n".format(start_str, end_str, name))
+
+
+class LanguageGetter:
+
+    def __init__(self):
+        self.window = tk.Tk()
+        self.window.title("Choose language")
+        self.russian_button = tk.Button(self.window,
+                                        text="Русский", command=lambda: self.choose_russian(),
+                                        width=10, height=1, font=("Courier", 48))
+        self.english_button = tk.Button(self.window,
+                                        text="English", command=lambda: self.choose_english(),
+                                        width=10, height=1, font=("Courier", 48))
+        self.chosen_language = None
+
+    def pack(self):
+        self.english_button.pack()
+        self.russian_button.pack()
+        self.window.mainloop()
+        return self.chosen_language
+
+    def choose_russian(self):
+        self.chosen_language = 'russian'
+        self.window.destroy()
+
+    def choose_english(self):
+        self.chosen_language = 'english'
+        self.window.destroy()
 
 
 class Frame(ABC):
@@ -169,11 +196,11 @@ class PleasuresFrame(Frame):
     def pack(self, side, anchor):
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        add_pleasure = tk.Button(self.frame, text="Добавить удовольствие",
+        add_pleasure = tk.Button(self.frame, text=TEXT['add_pleasure'],
                                  command=lambda: PleasureGetter(self.main).pack())
-        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.change_pleasure_window)
-        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+        self.delete_button = tk.Button(self.frame, text=TEXT["delete"], state=tk.DISABLED,
                                        command=self.delete_pleasure)
         add_pleasure.pack(side=tk.BOTTOM)
         self.redact_button.pack(side=tk.BOTTOM)
@@ -204,13 +231,13 @@ class ScheduleFrame(Frame):
         """Create schedule frame"""
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.redact_schedule)
-        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_paragraph_or_work_block)
-        add_schedule_paragraph = tk.Button(self.frame, text="Добавить пункт плана",
+        add_schedule_paragraph = tk.Button(self.frame, text=TEXT['add_paragraph'],
                                            command=lambda: ParagraphGetter(self.main).pack())
-        add_work_block = tk.Button(self.frame, text="Добавить блок работы",
+        add_work_block = tk.Button(self.frame, text=TEXT['add_work_block'],
                                    command=lambda: WorkBlockGetter(self.main).pack())
         add_schedule_paragraph.pack(side=tk.BOTTOM)
         add_work_block.pack(side=tk.BOTTOM)
@@ -252,11 +279,11 @@ class RoutinesFrame(Frame):
         super().pack(side, anchor)
         self.listbox['width'] = 38
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.redact_routine)
-        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_routine)
-        add_routine = tk.Button(self.frame, text="Добавить дело",
+        add_routine = tk.Button(self.frame, text=TEXT['add_task'],
                                 command=lambda: RoutineGetter(self.main).pack())
         add_routine.pack(side=tk.BOTTOM)
         self.redact_button.pack(side=tk.BOTTOM)
@@ -287,15 +314,15 @@ class ActivitiesFrame(Frame):
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         self.activities_number_frame = tk.Frame(self.frame)
         self.activities_number_label = tk.Label(self.activities_number_frame,
-                                                text="Сколько занятий будем делать:")
+                                                text=TEXT["how_many_activities"])
         self.activities_number_combobox = ttk.Combobox(self.activities_number_frame, width=2,
                                                        values=[0])
         self.activities_number_combobox.current(0)
-        self.add_button = tk.Button(self.frame, text="Добавить занятие",
+        self.add_button = tk.Button(self.frame, text=TEXT['add_activity'],
                                     command=lambda: ActivityGetter(self.main).pack())
-        self.redact_button = tk.Button(self.frame, text="Редактировать", state=tk.DISABLED,
+        self.redact_button = tk.Button(self.frame, text=TEXT['redact'], state=tk.DISABLED,
                                        command=self.redact_activity)
-        self.delete_button = tk.Button(self.frame, text="Удалить", state=tk.DISABLED,
+        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_activity)
 
     def update_combobox(self):
@@ -424,8 +451,8 @@ class WorkBlock(ObjectFrame):
         start_str = minutes_to_time(self.start)
         if self.start != self.end:
             end_str = minutes_to_time(self.end)
-            return "{} - {} Блок работы [{}]".format(start_str, end_str, duration)
-        return "{} Блок работы [{}]".format(start_str, duration)
+            return "{} - {} {} [{}]".format(start_str, end_str, TEXT['work_block'], duration)
+        return "{} {} [{}]".format(start_str, TEXT['work_block'], duration)
 
 
 class Activity(ObjectFrame):
@@ -443,7 +470,7 @@ class NameGetter:
 
     def __init__(self, window, name=''):
         self.name_frame = tk.Frame(window)
-        self.name_label = tk.Label(self.name_frame, text="Название")
+        self.name_label = tk.Label(self.name_frame, text=TEXT['name'])
         self.name_entry = tk.Entry(self.name_frame)
         if name:
             self.name_entry.insert(tk.END, name)
@@ -537,7 +564,7 @@ class PleasureGetter(ObjectGetter):
     def __init__(self, master: Main, name='', probability=''):
         super().__init__(master)
         self.name_frame = NameGetter(self.window, name)
-        self.probability = NumberGetter(self.window, "Вероятность", probability)
+        self.probability = NumberGetter(self.window, TEXT['probability'], probability)
 
     def pack(self):
         self.name_frame.pack()
@@ -569,8 +596,8 @@ class ParagraphGetter(ObjectGetter):
         super().__init__(master)
         self.old_paragraph = {"name": name, "start": start, "end": end}
         self.name_frame = NameGetter(self.window, name)
-        self.start_frame = TimeGetter(self.window, "Начало", start)
-        self.end_frame = TimeGetter(self.window, "Конец", end)
+        self.start_frame = TimeGetter(self.window, TEXT['start'], start)
+        self.end_frame = TimeGetter(self.window, TEXT['end'], end)
 
     def pack(self):
         """Create a window and run it"""
@@ -605,14 +632,14 @@ class RoutineGetter(ObjectGetter):
         if active_work_blocks is None:
             active_work_blocks = []
         self.name_frame = NameGetter(self.window, name)
-        self.duration_frame = TimeGetter(self.window, "Длительность", duration)
+        self.duration_frame = TimeGetter(self.window, TEXT['duration'], duration)
         self.active_work_blocks = active_work_blocks
 
         self.bottom_frame = tk.Frame(self.window)
-        self.off_frame = tk.LabelFrame(self.bottom_frame, text="Дело не попадёт в эти блоки работы")
+        self.off_frame = tk.LabelFrame(self.bottom_frame, text=TEXT["won't_get_in"])
         self.off_listbox = tk.Listbox(self.off_frame, width=40)
 
-        self.on_frame = tk.LabelFrame(self.bottom_frame, text="Дело попадёт в одно из этих блоков работы")
+        self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'])
         self.on_listbox = tk.Listbox(self.on_frame, width=40)
 
     def pack(self):
@@ -683,9 +710,9 @@ class WorkBlockGetter(ObjectGetter):
     def __init__(self, master: Main, start=0, end=0, duration=0):
         super().__init__(master)
         self.old_work_block = {"start": start, "end": end, "duration": duration}
-        self.start_frame = TimeGetter(self.window, "Начало", start)
-        self.end_frame = TimeGetter(self.window, "Конец", end)
-        self.duration_frame = TimeGetter(self.window, "Длительность", duration)
+        self.start_frame = TimeGetter(self.window, TEXT['start'], start)
+        self.end_frame = TimeGetter(self.window, TEXT['end'], end)
+        self.duration_frame = TimeGetter(self.window, TEXT['duration'], duration)
 
     def pack(self):
         """Create a new window and run it"""
@@ -719,7 +746,7 @@ class ActivityGetter(ObjectGetter):
         super().__init__(master)
         self.name = name
         self.name_frame = NameGetter(self.window, name)
-        self.weight = NumberGetter(self.window, "Вес", weight)
+        self.weight = NumberGetter(self.window, TEXT['weight'], weight)
 
     def pack(self):
         self.name_frame.pack()
@@ -848,7 +875,7 @@ def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
         list_of_words = list_of_words[2:]  # Removing '-' and end time
     else:
         dictionary['end'] = dictionary['start']
-    if "Блок работы" in string:
+    if TEXT['work_block'] in string:
         dictionary['duration'] = time_to_minutes(list_of_words[-1][1:-1])  # Work block [hh:mm] -> minutes
     else:
         dictionary['name'] = ' '.join(list_of_words)
@@ -928,11 +955,24 @@ def update_data():
     write_json_data(data)
 
 
-DEFAULT_DATA_DICT = {"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}, "activities": {}}
+DEFAULT_DATA_DICT = {"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}, "activities": {},
+                     "language": ""}
 if not isfile("data.json"):
     write_json_data(DEFAULT_DATA_DICT)
 else:
     update_data()
+
+LANGUAGE = get_json_data()["language"]
+if not LANGUAGE:
+    LANGUAGE = LanguageGetter().pack()
+    DATA = get_json_data()
+    DATA['language'] = LANGUAGE
+    write_json_data(DATA)
+TREE = ElTr.parse('{}.xml'.format(LANGUAGE))
+ROOT = TREE.getroot()
+TEXT = dict()
+for child in ROOT:
+    TEXT[child.attrib['key']] = child.text
 
 
 Main()
