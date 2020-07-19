@@ -977,7 +977,7 @@ if not LANGUAGE:
     DATA = get_json_data()
     DATA['language'] = LANGUAGE
     write_json_data(DATA)
-TREE = ElTr.parse('{}.xml'.format(LANGUAGE))
+TREE = ElTr.parse('languages/{}.xml'.format(LANGUAGE))
 ROOT = TREE.getroot()
 TEXT = dict()
 for child in ROOT:
