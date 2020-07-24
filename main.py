@@ -28,7 +28,7 @@ class Main:
         self.routines_frame = RoutinesFrame(self, self.right_frame, TEXT['tasks'])
 
         self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'], command=self.__make_schedule,
-                                   height=2, width=62)
+                                   height=1, width=27, font=("Courier", 20))
         self.textbox = tk.Text(self.main_window, height=32, width=55)
         self.__pack()
 
@@ -38,8 +38,8 @@ class Main:
         self.activities_frame.pack(tk.BOTTOM, tk.S)
 
         self.right_frame.pack(side=tk.LEFT, fill=tk.Y)
-        self.schedule_frame.pack(tk.TOP, tk.N)
-        self.routines_frame.pack(tk.BOTTOM, tk.S)
+        self.schedule_frame.pack(tk.BOTTOM, tk.N)
+        self.routines_frame.pack(tk.TOP, tk.S)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
         self.textbox.pack()
         self.main_window.mainloop()
@@ -165,15 +165,19 @@ class Frame(ABC):
         self.name = name
         self.main = main
         self.frame = tk.LabelFrame(master, text=name)
-        self.listbox = tk.Listbox(self.frame, width=35, font=("Courier", 10))
+        self.listbox = tk.Listbox(self.frame, width=48, height=13, font=("Courier", 10))
         self.redact_button = None
         self.delete_button = None
+        self.bottom_button_frame = tk.Frame(self.frame)
+        self.top_button_frame = tk.Frame(self.frame)
 
     @abstractmethod
     def pack(self, side, anchor):
         self.fill_listbox()
         self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
         self.listbox.pack(side=tk.TOP)
+        self.bottom_button_frame.pack()
+        self.top_button_frame.pack()
 
     @abstractmethod
     def fill_listbox(self):
@@ -197,15 +201,15 @@ class PleasuresFrame(Frame):
     def pack(self, side, anchor):
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        add_pleasure = tk.Button(self.frame, text=TEXT['add_pleasure'],
-                                 command=lambda: PleasureGetter(self.main).pack())
-        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
-                                       command=self.change_pleasure_window)
-        self.delete_button = tk.Button(self.frame, text=TEXT["delete"], state=tk.DISABLED,
-                                       command=self.delete_pleasure)
-        add_pleasure.pack(side=tk.BOTTOM)
-        self.redact_button.pack(side=tk.BOTTOM)
-        self.delete_button.pack(side=tk.BOTTOM)
+        add_pleasure = tk.Button(self.bottom_button_frame, text=TEXT['add_pleasure'],
+                                 command=lambda: PleasureGetter(self.main).pack(), font=BUTTON_FONT, width=15)
+        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
+                                       command=self.change_pleasure_window, font=BUTTON_FONT, width=15)
+        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT["delete"], state=tk.DISABLED,
+                                       command=self.delete_pleasure, font=BUTTON_FONT, width=15)
+        add_pleasure.pack(side=tk.LEFT)
+        self.redact_button.pack(side=tk.LEFT)
+        self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
         pleasures_dictionary = get_pleasures()
@@ -232,18 +236,18 @@ class ScheduleFrame(Frame):
         """Create schedule frame"""
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
-                                       command=self.redact_schedule)
-        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
-                                       command=self.delete_paragraph_or_work_block)
-        add_schedule_paragraph = tk.Button(self.frame, text=TEXT['add_paragraph'],
-                                           command=lambda: ParagraphGetter(self.main).pack())
-        add_work_block = tk.Button(self.frame, text=TEXT['add_work_block'],
-                                   command=lambda: WorkBlockGetter(self.main).pack())
-        add_schedule_paragraph.pack(side=tk.BOTTOM)
-        add_work_block.pack(side=tk.BOTTOM)
-        self.redact_button.pack(side=tk.BOTTOM)
-        self.delete_button.pack(side=tk.BOTTOM)
+        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
+                                       command=self.redact_schedule, font=BUTTON_FONT, width=23)
+        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
+                                       command=self.delete_paragraph_or_work_block, font=BUTTON_FONT, width=23)
+        add_schedule_paragraph = tk.Button(self.top_button_frame, text=TEXT['add_paragraph'], width=23,
+                                           command=lambda: ParagraphGetter(self.main).pack(), font=BUTTON_FONT)
+        add_work_block = tk.Button(self.top_button_frame, text=TEXT['add_work_block'], width=23,
+                                   command=lambda: WorkBlockGetter(self.main).pack(), font=BUTTON_FONT)
+        add_schedule_paragraph.pack(side=tk.LEFT)
+        add_work_block.pack(side=tk.LEFT)
+        self.redact_button.pack(side=tk.LEFT)
+        self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
         schedule_list = get_schedule() + get_work_blocks()
@@ -280,17 +284,16 @@ class ScheduleFrame(Frame):
 class RoutinesFrame(Frame):
     def pack(self, side, anchor):
         super().pack(side, anchor)
-        self.listbox['width'] = 38
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.frame, text=TEXT["redact"], state=tk.DISABLED,
-                                       command=self.redact_routine)
-        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
-                                       command=self.delete_routine)
-        add_routine = tk.Button(self.frame, text=TEXT['add_task'],
-                                command=lambda: RoutineGetter(self.main).pack())
-        add_routine.pack(side=tk.BOTTOM)
-        self.redact_button.pack(side=tk.BOTTOM)
-        self.delete_button.pack(side=tk.BOTTOM)
+        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
+                                       command=self.redact_routine, font=BUTTON_FONT, width=15)
+        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
+                                       command=self.delete_routine, font=BUTTON_FONT, width=15)
+        add_routine = tk.Button(self.bottom_button_frame, text=TEXT['add_task'], width=15,
+                                command=lambda: RoutineGetter(self.main).pack(), font=BUTTON_FONT)
+        add_routine.pack(side=tk.LEFT)
+        self.redact_button.pack(side=tk.LEFT)
+        self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
         routines_dict = get_routines()
@@ -323,17 +326,17 @@ class ActivitiesFrame(Frame):
         super().__init__(main, master, name)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         self.activities_number_frame = tk.Frame(self.frame)
-        self.activities_number_label = tk.Label(self.activities_number_frame,
+        self.activities_number_label = tk.Label(self.activities_number_frame, font=BUTTON_FONT,
                                                 text=TEXT["how_many_activities"])
         self.activities_number_combobox = ttk.Combobox(self.activities_number_frame, width=2,
-                                                       values=[0])
+                                                       values=[0], font=BUTTON_FONT)
         self.activities_number_combobox.current(0)
-        self.add_button = tk.Button(self.frame, text=TEXT['add_activity'],
-                                    command=lambda: ActivityGetter(self.main).pack())
-        self.redact_button = tk.Button(self.frame, text=TEXT['redact'], state=tk.DISABLED,
-                                       command=self.redact_activity)
-        self.delete_button = tk.Button(self.frame, text=TEXT['delete'], state=tk.DISABLED,
-                                       command=self.delete_activity)
+        self.add_button = tk.Button(self.bottom_button_frame, text=TEXT['add_activity'], width=15,
+                                    command=lambda: ActivityGetter(self.main).pack(), font=BUTTON_FONT)
+        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT['redact'], state=tk.DISABLED,
+                                       command=self.redact_activity, font=BUTTON_FONT, width=15)
+        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
+                                       command=self.delete_activity, font=BUTTON_FONT, width=15)
 
     def update_combobox(self):
         values = list(range(len(get_activities()) + 1))
@@ -347,9 +350,9 @@ class ActivitiesFrame(Frame):
         self.activities_number_frame.pack()
         self.activities_number_label.pack(side=tk.LEFT)
         self.activities_number_combobox.pack(side=tk.RIGHT)
-        self.add_button.pack(side=tk.BOTTOM)
-        self.redact_button.pack(side=tk.BOTTOM)
-        self.delete_button.pack(side=tk.BOTTOM)
+        self.add_button.pack(side=tk.LEFT)
+        self.redact_button.pack(side=tk.LEFT)
+        self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
         self.update_combobox()
@@ -550,7 +553,7 @@ class ObjectGetter(ABC):
     def __init__(self, master: Main):
         self.master = master
         self.window = tk.Tk()
-        self.okay_button = tk.Button(self.window, text="OK",
+        self.okay_button = tk.Button(self.window, text="OK", font=BUTTON_FONT,
                                      command=self.append_to_json)
 
     @abstractmethod
@@ -984,5 +987,6 @@ TEXT = dict()
 for child in ROOT:
     TEXT[child.attrib['key']] = child.text
 
+BUTTON_FONT = ("Courier", 10)
 
 Main()

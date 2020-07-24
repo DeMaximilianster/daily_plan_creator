@@ -12,11 +12,11 @@
     <string key="rest">Rest</string>
     <string key="redact">Redact</string>
     <string key="delete">Delete</string>
-    <string key="add_pleasure">Add pleasure</string>
+    <string key="add_pleasure">Add</string>
     <string key="add_paragraph">Add paragraph</string>
     <string key="add_work_block">Add work block</string>
-    <string key="add_task">Add task</string>
-    <string key="add_activity">Add activity</string>
+    <string key="add_task">Add</string>
+    <string key="add_activity">Add</string>
     <string key="how_many_activities">Amount of activities in the plan</string>
     <string key="name">Name</string>
     <string key="probability">Probability</string>

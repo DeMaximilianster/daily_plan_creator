@@ -12,11 +12,11 @@
     <string key="rest">Отдых</string>
     <string key="redact">Редактировать</string>
     <string key="delete">Удалить</string>
-    <string key="add_pleasure">Добавить удовольствие</string>
+    <string key="add_pleasure">Добавить</string>
     <string key="add_paragraph">Добавить пункт</string>
     <string key="add_work_block">Добавить блок работы</string>
-    <string key="add_task">Добавить дело</string>
-    <string key="add_activity">Добавить занятие</string>
+    <string key="add_task">Добавить</string>
+    <string key="add_activity">Добавить</string>
     <string key="how_many_activities">Кол-во занятий в плане</string>
     <string key="name">Название</string>
     <string key="probability">Вероятность</string>
