@@ -8,7 +8,7 @@
     <string key="failed_to_create">Failed to create schedule bacause tasks don't fit to work blocks</string>
     <string key="pleasure_forbidden">Pleasure [{}] is forbidden</string>
     <string key="any_activity">Any activity</string>
-    <string key="work_cycle">Work cycle</string>
+    <string key="work_cycle">Work cycle [{}]</string>
     <string key="rest">Rest</string>
     <string key="redact">Redact</string>
     <string key="delete">Delete</string>

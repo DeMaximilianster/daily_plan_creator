@@ -73,7 +73,7 @@ class Main:
             else:
                 continue
         else:  # So after 100 trial distribution still failed
-            self.textbox.insert(tk.END, TEXT['faided_to_create'])
+            self.textbox.insert(tk.END, TEXT['failed_to_create'])
             return  # Stop the function
 
         schedule_list = get_schedule() + work_blocks
@@ -101,6 +101,7 @@ class Main:
 
     def insert_work_block(self, schedule_paragraph, start_minute, end_minute, activities):
         """Insert work block data to textbox"""
+        activities = dict(activities)
         minutes_of_work = schedule_paragraph['duration']
         sequence = schedule_paragraph['routines']
         minutes_of_rest = end_minute - start_minute - minutes_of_work
