@@ -2,13 +2,11 @@
 
 from abc import ABC, abstractmethod
 from random import randint, choice, shuffle, random
-import datetime
 import json
 import tkinter as tk
 from tkinter import ttk
 from os.path import isfile
 import xml.etree.ElementTree as ElTr
-from openpyxl import load_workbook
 
 
 class Main:
@@ -833,44 +831,8 @@ def time_to_minutes(time: str) -> int:
     return int(list_of_numbers[0])*60 + int(list_of_numbers[1])
 
 
-def display_schedule_table(schedule, forbidden_pleasures, day_tuple):
-    """This function is now used now but will be used in future. Don't touch"""
-    day_today = datetime.datetime(*day_tuple)
-    file_name = '../Наработки/Планы.xlsx'
-    workbook = load_workbook(file_name)
-    worksheet = workbook['Дневной']
-    column = get_table_column(worksheet, day_today)
-    row = 2
-    time = 390
-    for routine in schedule:
-        cell = worksheet.cell(column=column, row=row)
-        routine.table_paragraph(cell, time)
-        row += 1
-        time += routine.duration
-
-    for pleasure in forbidden_pleasures:
-        cell = worksheet.cell(column=column, row=row)
-        cell.value = "Нельзя " + pleasure
-        row += 1
-
-    workbook.save(file_name)
-
-
-def get_table_column(worksheet, day_today):
-    """This function is now used now but will be used in future. Don't touch"""
-    column = 1
-    while True:
-        cell = worksheet.cell(row=1, column=column)
-        if cell.value is None:
-            cell.value = day_today
-            break
-        if cell.value == day_today:
-            break
-        column += 1
-    return column
-
-
 def create_pleasure_dict_by_string(string: str) -> dict:
+    """Creates a pleasure dict by string"""
     dictionary = dict()
     list_of_words = string.split()
     dictionary["name"] = ' '.join(list_of_words[:-1])  # ['Junk', 'Food', '5%'] -> 'Junk Food'
