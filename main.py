@@ -48,6 +48,7 @@ class Main:
         activities = get_activities()
         amount_of_activities = self.activities_frame.get_amount_of_activities()
         chosen_activities = choose_activities(activities, amount_of_activities)
+        chosen_activities = squeeze_activities_weight(chosen_activities)
         work_blocks = get_work_blocks()
         # Distribute routines between work blocks
         routines = list(get_routines().values())
@@ -818,6 +819,19 @@ def choose_one_activity(activities):
         else:
             weight -= activities[activity]["weight"]
     return chosen_activity
+
+
+def squeeze_activities_weight(activities: dict) -> dict:
+    """Makes activities probability closer to average"""
+    activities = dict(activities)  # this will make sure parameter activities won't be changed
+    average_weight = 0
+    if activities:
+        for activity in activities.values():
+            average_weight += activity["weight"]
+        average_weight //= len(activities)
+        for activity in activities:
+            activities[activity]["weight"] = (activities[activity]["weight"] + average_weight*2) // 3
+    return activities
 
 
 def minutes_to_time(minutes: int) -> str:
