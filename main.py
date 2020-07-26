@@ -393,7 +393,7 @@ class Routine(ObjectFrame):
                 pluses_minuses += '+'
             else:
                 pluses_minuses += '-'
-        return "{:23s}[{}] {}".format(self.name, minutes_to_time(self.duration), pluses_minuses)
+        return "{:30s}[{}] {}".format(self.name, minutes_to_time(self.duration), pluses_minuses)
 
 
 class Pleasure(ObjectFrame):
@@ -423,7 +423,7 @@ class Pleasure(ObjectFrame):
         write_pleasures(pleasures)
 
     def get_string(self):
-        return "{:30s} {:3d}%".format(self.name, self.probability.get())
+        return "{:44s} {:2d}%".format(self.name, self.probability.get())
 
 
 class Paragraph(ObjectFrame):
@@ -473,7 +473,7 @@ class Activity(ObjectFrame):
         self.weight = dictionary["weight"]
 
     def get_string(self) -> str:
-        return "{:30s} {:4d}".format(self.name, self.weight)
+        return "{:44s} {:3d}".format(self.name, self.weight)
 
 
 class NameGetter:
