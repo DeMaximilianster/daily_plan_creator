@@ -700,14 +700,17 @@ class ParagraphGetter(ObjectGetter):
 
     def append_to_json(self):
         """Write data about schedule paragraph into json"""
-        paragraph = self.paragraph()
-        data = get_json_data()
-        if self.old_paragraph in data['schedule']:
-            data['schedule'].remove(self.old_paragraph)
-        data['schedule'].append(paragraph)
-        write_json_data(data)
-        self.master.schedule_frame.update()
-        self.window.destroy()
+        if TEXT["work_block"] not in self.name_frame.get():
+            paragraph = self.paragraph()
+            data = get_json_data()
+            if self.old_paragraph in data['schedule']:
+                data['schedule'].remove(self.old_paragraph)
+            data['schedule'].append(paragraph)
+            write_json_data(data)
+            self.master.schedule_frame.update()
+            self.window.destroy()
+        else:
+            self.error_label["text"] = TEXT["work_block_in_name_error"]
 
     def paragraph(self) -> dict:
         """Get paragraph properties as dictionary"""

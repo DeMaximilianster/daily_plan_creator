@@ -33,4 +33,5 @@
     <string key="dark">Тёмная</string>
     <string key="work_block_duration_error">Длительность работы не может превышать длительности блока</string>
     <string key="number_input_error">Введите натуральное число</string>
+    <string key="work_block_in_name_error">Не используйте "Блок работы" в названии</string>
 </strings>

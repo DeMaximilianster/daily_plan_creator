@@ -33,4 +33,5 @@
     <string key="dark">Dark</string>
     <string key="work_block_duration_error">Work duration can't be longer than block duration</string>
     <string key="number_input_error">Enter natural number</string>
+    <string key="work_block_in_name_error">Don't use "Work block" in your name</string>
 </strings>
