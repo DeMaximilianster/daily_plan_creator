@@ -17,6 +17,13 @@ class Main:
         self.main_window.title("Daily plan creator")
         self.main_window.resizable(0, 0)  # user can't change size of a main window
 
+        self.main_menu = tk.Menu(self.main_window)
+        self.main_window.config(menu=self.main_menu)
+        self.appearance_menu = tk.Menu(self.main_menu, tearoff=0)
+        self.appearance_menu.add_command(label=TEXT["light"], command=self.light_theme)
+        self.appearance_menu.add_command(label=TEXT["dark"], command=self.dark_theme)
+        self.main_menu.add_cascade(label=TEXT["theme"], menu=self.appearance_menu)
+
         self.left_frame = tk.Frame()
         self.pleasures_frame = PleasuresFrame(self, self.left_frame, TEXT['pleasures'])
         self.activities_frame = ActivitiesFrame(self, self.left_frame, TEXT['activities'])
@@ -29,6 +36,36 @@ class Main:
                                    height=1, width=27, font=("Courier", 20))
         self.textbox = tk.Text(self.main_window, height=32, width=55)
         self.__pack()
+        theme = get_theme()
+        if theme == "light":
+            self.light_theme()
+        elif theme == "dark":
+            self.dark_theme()
+        self.main_window.mainloop()  # this must be the last instruction because it activates the window
+
+    def light_theme(self):
+        write_theme("light")
+        self.main_window.configure(bg='SystemButtonFace')
+        self.textbox.configure(bg='SystemWindow', fg='black')
+        self.go_button.configure(bg='SystemButtonFace', fg='black')
+        self.main_menu.configure(bg='SystemMenu', fg='black')
+        self.appearance_menu.configure(bg='SystemMenu', fg='black')
+        self.activities_frame.light_theme()
+        self.pleasures_frame.light_theme()
+        self.routines_frame.light_theme()
+        self.schedule_frame.light_theme()
+
+    def dark_theme(self):
+        write_theme("dark")
+        self.main_window.configure(bg='#2b2b2b')
+        self.textbox.configure(bg='#2b2b2b', fg='#c0c0c0')
+        self.go_button.configure(bg='#2b2b2b', fg='#c0c0c0')
+        self.main_menu.configure(bg='#2b2b2b', fg='#c0c0c0')
+        self.appearance_menu.configure(bg='#2b2b2b', fg='#c0c0c0')
+        self.activities_frame.dark_theme()
+        self.pleasures_frame.dark_theme()
+        self.routines_frame.dark_theme()
+        self.schedule_frame.dark_theme()
 
     def __pack(self):
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y)
@@ -40,7 +77,6 @@ class Main:
         self.routines_frame.pack(tk.TOP, tk.S)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
         self.textbox.pack()
-        self.main_window.mainloop()
 
     def __make_schedule(self):
         """Make a schedule based on options"""
@@ -175,8 +211,8 @@ class Frame(ABC):
         self.fill_listbox()
         self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
         self.listbox.pack(side=tk.TOP)
-        self.bottom_button_frame.pack()
         self.top_button_frame.pack()
+        self.bottom_button_frame.pack()
 
     @abstractmethod
     def fill_listbox(self):
@@ -193,6 +229,18 @@ class Frame(ABC):
     def disable_buttons(self):
         self.redact_button.configure(state=tk.DISABLED)
         self.delete_button.configure(state=tk.DISABLED)
+
+    def light_theme(self):
+        self.frame.configure(bg='SystemButtonFace', fg='black')
+        self.listbox.configure(bg='SystemWindow', fg='black')
+        for slave in self.bottom_button_frame.pack_slaves() + self.top_button_frame.pack_slaves():
+            slave.configure(bg='SystemButtonFace', fg='black')
+
+    def dark_theme(self):
+        self.frame.configure(bg='#2b2b2b', fg='#c0c0c0')
+        self.listbox.configure(bg='#2b2b2b', fg='#c0c0c0')
+        for slave in self.bottom_button_frame.pack_slaves()+self.top_button_frame.pack_slaves():
+            slave.configure(bg='#2b2b2b', fg='#ffffff')
 
 
 class PleasuresFrame(Frame):
@@ -336,6 +384,14 @@ class ActivitiesFrame(Frame):
                                        command=self.redact_activity, font=BUTTON_FONT, width=15)
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_activity, font=BUTTON_FONT, width=15)
+
+    def light_theme(self):
+        super().light_theme()
+        self.activities_number_label.configure(bg='SystemButtonFace', fg='black')
+
+    def dark_theme(self):
+        super().dark_theme()
+        self.activities_number_label.configure(bg='#2b2b2b', fg='#c0c0c0')
 
     def update_combobox(self):
         values = list(range(len(get_activities()) + 1))
@@ -724,7 +780,7 @@ class WorkBlockGetter(ObjectGetter):
         self.old_work_block = {"start": start, "end": end, "duration": duration}
         self.start_frame = TimeGetter(self.window, TEXT['start'], start)
         self.end_frame = TimeGetter(self.window, TEXT['end'], end)
-        self.duration_frame = TimeGetter(self.window, TEXT['duration'], duration)
+        self.duration_frame = TimeGetter(self.window, TEXT['work_duration'], duration)
 
     def pack(self):
         """Create a new window and run it"""
@@ -922,6 +978,11 @@ def get_activities() -> dict:
     return get_json_data()['activities']
 
 
+def get_theme() -> str:
+    """Get theme"""
+    return get_json_data()['theme']
+
+
 def write_json_data(data) -> None:
     """Update the json"""
     with open('data.json', 'w', encoding='utf-8') as file:
@@ -935,6 +996,13 @@ def write_pleasures(pleasures: dict) -> None:
     write_json_data(data)
 
 
+def write_theme(theme: str) -> None:
+    """Update theme"""
+    data = get_json_data()
+    data['theme'] = theme
+    write_json_data(data)
+
+
 def update_data():
     """Fill the database with missing keys"""
     data = get_json_data()
@@ -945,7 +1013,7 @@ def update_data():
 
 
 DEFAULT_DATA_DICT = {"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}, "activities": {},
-                     "language": ""}
+                     "language": "", "theme": "light"}
 if not isfile("data.json"):
     write_json_data(DEFAULT_DATA_DICT)
 else:

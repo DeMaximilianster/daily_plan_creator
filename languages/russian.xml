@@ -19,12 +19,16 @@
     <string key="add_activity">Добавить</string>
     <string key="how_many_activities">Кол-во занятий в плане</string>
     <string key="name">Название</string>
-    <string key="probability">Вероятность</string>
+    <string key="probability">Вероятность (%)</string>
     <string key="start">Начало</string>
     <string key="end">Конец</string>
+    <string key="work_duration">Длительность работы (остальное время - отдых)</string>
     <string key="duration">Длительность</string>
     <string key="won't_get_in">Дело не попадёт в эти блоки работы</string>
     <string key="will_get_in">Дело попадёт в одно из этих блоков работы</string>
     <string key="weight">Вес</string>
     <string key="work_block">Блок работы</string>
+    <string key="theme">Тема</string>
+    <string key="light">Светлая</string>
+    <string key="dark">Тёмная</string>
 </strings>
