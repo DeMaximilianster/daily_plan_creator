@@ -616,6 +616,10 @@ class NumberGetter(SimpleGetter):
         """Get number"""
         return int(self.duration_entry.get())
 
+    def inputed_correctly(self):
+        """Checks if number inputed correctly"""
+        return self.duration_entry.get().isdigit()
+
 
 class ObjectGetter(ABC):
     """Window with entries for objects like pleasures and work blocks"""
@@ -625,10 +629,12 @@ class ObjectGetter(ABC):
         self.window = tk.Tk()
         self.okay_button = tk.Button(self.window, text="OK", font=BUTTON_FONT,
                                      command=self.append_to_json)
+        self.error_label = tk.Label(self.window, fg='red')
 
     @abstractmethod
     def pack(self):
         """Create a window with entries"""
+        self.error_label.pack()
         self.okay_button.pack()
         self.window.mainloop()
 
@@ -656,12 +662,15 @@ class PleasureGetter(ObjectGetter):
 
     def append_to_json(self):
         """Write data about pleasure to json"""
-        paragraph = self.paragraph()
-        data = get_json_data()
-        data['pleasures'][self.name()] = paragraph
-        write_json_data(data)
-        self.master.pleasures_frame.update()
-        self.window.destroy()
+        if self.probability.inputed_correctly():
+            paragraph = self.paragraph()
+            data = get_json_data()
+            data['pleasures'][self.name()] = paragraph
+            write_json_data(data)
+            self.master.pleasures_frame.update()
+            self.window.destroy()
+        else:
+            self.error_label["text"] = TEXT["number_input_error"]
 
     def paragraph(self) -> dict:
         """Get data about pleasure as dictionary"""
@@ -796,14 +805,12 @@ class WorkBlockGetter(ObjectGetter):
         self.start_frame = TimeGetter(self.window, TEXT['start'], start)
         self.end_frame = TimeGetter(self.window, TEXT['end'], end)
         self.duration_frame = TimeGetter(self.window, TEXT['work_duration'], duration)
-        self.error_label = tk.Label(self.window, fg='red')
 
     def pack(self):
         """Create a new window and run it"""
         self.start_frame.pack()
         self.end_frame.pack()
         self.duration_frame.pack()
-        self.error_label.pack()
         super().pack()
 
     def append_to_json(self):
@@ -843,14 +850,17 @@ class ActivityGetter(ObjectGetter):
 
     def append_to_json(self):
         """Write data about activity to json"""
-        paragraph = self.paragraph()
-        data = get_json_data()
-        if self.name in data['activities'].keys():  # remove old entry
-            data['activities'].pop(self.name)
-        data['activities'][self.name_frame.get()] = paragraph
-        write_json_data(data)
-        self.master.activities_frame.update()
-        self.window.destroy()
+        if self.weight.inputed_correctly():
+            paragraph = self.paragraph()
+            data = get_json_data()
+            if self.name in data['activities'].keys():  # remove old entry
+                data['activities'].pop(self.name)
+            data['activities'][self.name_frame.get()] = paragraph
+            write_json_data(data)
+            self.master.activities_frame.update()
+            self.window.destroy()
+        else:
+            self.error_label["text"] = TEXT["number_input_error"]
 
     def paragraph(self) -> dict:
         """Get data about activity as dictionary"""

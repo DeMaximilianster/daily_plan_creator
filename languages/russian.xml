@@ -32,4 +32,5 @@
     <string key="light">Светлая</string>
     <string key="dark">Тёмная</string>
     <string key="work_block_duration_error">Длительность работы не может превышать длительности блока</string>
+    <string key="number_input_error">Введите натуральное число</string>
 </strings>

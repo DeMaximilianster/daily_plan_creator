@@ -19,7 +19,7 @@
     <string key="add_activity">Add</string>
     <string key="how_many_activities">Amount of activities in the plan</string>
     <string key="name">Name</string>
-    <string key="probability">Probability</string>
+    <string key="probability">Probability (%)</string>
     <string key="start">Start</string>
     <string key="end">End</string>
     <string key="work_duration">Work duration (time left - rest)</string>
@@ -32,4 +32,5 @@
     <string key="light">Light</string>
     <string key="dark">Dark</string>
     <string key="work_block_duration_error">Work duration can't be longer than block duration</string>
+    <string key="number_input_error">Enter natural number</string>
 </strings>
