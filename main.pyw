@@ -534,36 +534,50 @@ class Activity(ObjectFrame):
         return "{:44s} {:3d}".format(self.name, self.weight)
 
 
-class NameGetter:
+class SimpleGetter(ABC):
+    """Frame to get some data like name or time"""
+    def __init__(self, window):
+        self.frame = tk.Frame(window)
+
+    @abstractmethod
+    def pack(self):
+        pass
+
+    @abstractmethod
+    def get(self):
+        pass
+
+
+class NameGetter(SimpleGetter):
     """Entry for name of something"""
 
     def __init__(self, window, name=''):
-        self.name_frame = tk.Frame(window)
-        self.name_label = tk.Label(self.name_frame, text=TEXT['name'])
-        self.name_entry = tk.Entry(self.name_frame)
+        super().__init__(window)
+        self.name_label = tk.Label(self.frame, text=TEXT['name'])
+        self.name_entry = tk.Entry(self.frame)
         if name:
             self.name_entry.insert(tk.END, name)
 
     def pack(self):
         """Pack the frame"""
-        self.name_frame.pack()
+        self.frame.pack()
         self.name_label.pack(side=tk.LEFT)
         self.name_entry.pack(side=tk.LEFT)
 
-    def name(self):
+    def get(self):
         """Get the name"""
         return self.name_entry.get()
 
 
-class TimeGetter:
+class TimeGetter(SimpleGetter):
     """Entry for time of something"""
 
     def __init__(self, window, text, time=0):
+        super().__init__(window)
         minutes = time % 60
         hours = time // 60
         minutes_list = list(range(0, 60, 5))
         hours_list = list(range(0, 25))
-        self.frame = tk.Frame(window)
         self.label = tk.Label(self.frame, text=text)
         self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2)
         self.hours_entry.current(hours_list.index(hours))  # choose zero as a default hour
@@ -578,15 +592,15 @@ class TimeGetter:
         tk.Label(self.frame, text=':').pack(side=tk.LEFT)
         self.minutes_entry.pack(side=tk.LEFT)
 
-    def time(self):
+    def get(self):
         """Get time"""
         return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get())
 
 
-class NumberGetter:
+class NumberGetter(SimpleGetter):
     """Entry for getting a number"""
     def __init__(self, window, text, default_number=''):
-        self.frame = tk.Frame(window)
+        super().__init__(window)
         self.label = tk.Label(self.frame, text=text)
         self.duration_entry = tk.Entry(self.frame, width=3)
         if default_number:
@@ -598,8 +612,8 @@ class NumberGetter:
         self.label.pack(side=tk.LEFT)
         self.duration_entry.pack(side=tk.LEFT)
 
-    def time(self):
-        """Get time"""
+    def get(self):
+        """Get number"""
         return int(self.duration_entry.get())
 
 
@@ -651,11 +665,11 @@ class PleasureGetter(ObjectGetter):
 
     def paragraph(self) -> dict:
         """Get data about pleasure as dictionary"""
-        return {'name': self.name_frame.name(), 'probability': self.probability.time()}
+        return {'name': self.name_frame.get(), 'probability': self.probability.get()}
 
     def name(self):
         """Get pleasure's name"""
-        return self.name_frame.name()
+        return self.name_frame.get()
 
 
 class ParagraphGetter(ObjectGetter):
@@ -688,9 +702,9 @@ class ParagraphGetter(ObjectGetter):
 
     def paragraph(self) -> dict:
         """Get paragraph properties as dictionary"""
-        return {"name": self.name_frame.name(),
-                "start": self.start_frame.time(),
-                "end": self.end_frame.time()}
+        return {"name": self.name_frame.get(),
+                "start": self.start_frame.get(),
+                "end": self.end_frame.get()}
 
 
 class RoutineGetter(ObjectGetter):
@@ -737,7 +751,7 @@ class RoutineGetter(ObjectGetter):
     def paragraph(self) -> dict:
         """Get routine properties as dictionary"""
         return {"name": self.name(),
-                "duration": self.duration_frame.time(),
+                "duration": self.duration_frame.get(),
                 "active_work_blocks": self.active_work_blocks}
 
     def fill_listboxes(self):
@@ -754,7 +768,7 @@ class RoutineGetter(ObjectGetter):
 
     def name(self) -> str:
         """Get the name of routine"""
-        return self.name_frame.name()
+        return self.name_frame.get()
 
     def from_off_listbox_to_on(self):
         work_block = self.off_listbox.get(tk.ACTIVE)
@@ -810,9 +824,9 @@ class WorkBlockGetter(ObjectGetter):
 
     def paragraph(self) -> dict:
         """Get work block properties as dictionary"""
-        return {"start": self.start_frame.time(),
-                "end": self.end_frame.time(),
-                "duration": self.duration_frame.time()}
+        return {"start": self.start_frame.get(),
+                "end": self.end_frame.get(),
+                "duration": self.duration_frame.get()}
 
 
 class ActivityGetter(ObjectGetter):
@@ -833,14 +847,14 @@ class ActivityGetter(ObjectGetter):
         data = get_json_data()
         if self.name in data['activities'].keys():  # remove old entry
             data['activities'].pop(self.name)
-        data['activities'][self.name_frame.name()] = paragraph
+        data['activities'][self.name_frame.get()] = paragraph
         write_json_data(data)
         self.master.activities_frame.update()
         self.window.destroy()
 
     def paragraph(self) -> dict:
         """Get data about activity as dictionary"""
-        return {'name': self.name_frame.name(), 'weight': self.weight.time()}
+        return {'name': self.name_frame.get(), 'weight': self.weight.get()}
 
 
 def choose_activities(activities: dict, number: int):
