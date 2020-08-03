@@ -22,7 +22,7 @@
     <string key="probability">Probability</string>
     <string key="start">Start</string>
     <string key="end">End</string>
-    <string key="work_duration">Duration of work (time left - rest)</string>
+    <string key="work_duration">Work duration (time left - rest)</string>
     <string key="duration">Duration</string>
     <string key="won't_get_in">Task won't get in there work blocks</string>
     <string key="will_get_in">Task will get in one of there work blocks</string>
@@ -31,4 +31,5 @@
     <string key="theme">Theme</string>
     <string key="light">Light</string>
     <string key="dark">Dark</string>
+    <string key="work_block_duration_error">Work duration can't be longer than block duration</string>
 </strings>

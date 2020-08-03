@@ -781,26 +781,31 @@ class WorkBlockGetter(ObjectGetter):
         self.start_frame = TimeGetter(self.window, TEXT['start'], start)
         self.end_frame = TimeGetter(self.window, TEXT['end'], end)
         self.duration_frame = TimeGetter(self.window, TEXT['work_duration'], duration)
+        self.error_label = tk.Label(self.window, fg='red')
 
     def pack(self):
         """Create a new window and run it"""
         self.start_frame.pack()
         self.end_frame.pack()
         self.duration_frame.pack()
+        self.error_label.pack()
         super().pack()
 
     def append_to_json(self):
         """Write data about work block into json"""
         paragraph = self.paragraph()
-        data = get_json_data()
-        if self.old_work_block in data['work_blocks']:
-            data['work_blocks'].remove(self.old_work_block)
-        data['work_blocks'].append(paragraph)
-        data['work_blocks'].sort(key=lambda x: x['start'])
-        write_json_data(data)
-        self.master.schedule_frame.update()
-        self.master.routines_frame.update()
-        self.window.destroy()
+        if paragraph['end'] - paragraph['start'] >= paragraph['duration']:
+            data = get_json_data()
+            if self.old_work_block in data['work_blocks']:
+                data['work_blocks'].remove(self.old_work_block)
+            data['work_blocks'].append(paragraph)
+            data['work_blocks'].sort(key=lambda x: x['start'])
+            write_json_data(data)
+            self.master.schedule_frame.update()
+            self.master.routines_frame.update()
+            self.window.destroy()
+        else:
+            self.error_label['text'] = TEXT['work_block_duration_error']
 
     def paragraph(self) -> dict:
         """Get work block properties as dictionary"""
