@@ -36,7 +36,7 @@ class Main:
                                    height=1, width=27, font=("Courier", 20))
         self.textbox = tk.Text(self.main_window, height=32, width=55)
         self.__pack()
-        theme = get_theme()
+        theme = get_json_data()['theme']
         if theme == "light":
             self.light_theme()
         elif theme == "dark":
@@ -44,7 +44,7 @@ class Main:
         self.main_window.mainloop()  # this must be the last instruction because it activates the window
 
     def light_theme(self):
-        write_theme("light")
+        write_json_data_by_key("light", "theme")
         self.main_window.configure(bg='SystemButtonFace')
         self.textbox.configure(bg='SystemWindow', fg='black')
         self.go_button.configure(bg='SystemButtonFace', fg='black')
@@ -56,7 +56,7 @@ class Main:
         self.schedule_frame.light_theme()
 
     def dark_theme(self):
-        write_theme("dark")
+        write_json_data_by_key("dark", "theme")
         self.main_window.configure(bg='#2b2b2b')
         self.textbox.configure(bg='#2b2b2b', fg='#c0c0c0')
         self.go_button.configure(bg='#2b2b2b', fg='#c0c0c0')
@@ -81,13 +81,13 @@ class Main:
     def __make_schedule(self):
         """Make a schedule based on options"""
         self.textbox.delete('1.0', tk.END)  # Clear text
-        activities = get_activities()
+        activities = get_json_data()['activities']
         amount_of_activities = self.activities_frame.get_amount_of_activities()
         chosen_activities = choose_activities(activities, amount_of_activities)
         chosen_activities = squeeze_activities_weight(chosen_activities)
-        work_blocks = get_work_blocks()
+        work_blocks = get_json_data()['work_blocks']
         # Distribute routines between work blocks
-        routines = list(get_routines().values())
+        routines = list(get_json_data()['routines'].values())
         routines.sort(key=lambda x: len(x['active_work_blocks']))
         for _ in range(100):  # 100 trials of distribution
             for work_block in work_blocks:
@@ -111,7 +111,7 @@ class Main:
             self.textbox.insert(tk.END, TEXT['failed_to_create'])
             return  # Stop the function
 
-        schedule_list = get_schedule() + work_blocks
+        schedule_list = get_json_data()['schedule'] + work_blocks
         schedule_list.sort(key=lambda x: x['start'])
         for schedule_paragraph in schedule_list:
             end_minute = schedule_paragraph['end']
@@ -120,7 +120,7 @@ class Main:
                 self.insert_work_block(schedule_paragraph, start_minute, end_minute, chosen_activities)
             else:  # just a paragraph
                 self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
-        for pleasure in get_pleasures().values():
+        for pleasure in get_json_data()['pleasures'].values():
             if random() * 100 > pleasure['probability']:
                 self.textbox.insert(tk.END, TEXT['pleasure_forbidden'].format(pleasure['name'])+'\n')
 
@@ -259,7 +259,7 @@ class PleasuresFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
-        pleasures_dictionary = get_pleasures()
+        pleasures_dictionary = get_json_data()['pleasures']
         for pleasure in pleasures_dictionary:
             pleasure_object = Pleasure(pleasures_dictionary[pleasure])
             self.listbox.insert(tk.END, pleasure_object.get_string())
@@ -297,7 +297,8 @@ class ScheduleFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
-        schedule_list = get_schedule() + get_work_blocks()
+        data = get_json_data()
+        schedule_list = data['schedule'] + data['work_blocks']
         schedule_list.sort(key=lambda x: x['start'])
         for paragraph in schedule_list:
             if 'duration' in paragraph.keys():
@@ -343,7 +344,7 @@ class RoutinesFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
-        routines_dict = get_routines()
+        routines_dict = get_json_data()['routines']
         for routine in routines_dict.keys():
             self.listbox.insert(tk.END, Routine(routines_dict[routine]).get_string())
 
@@ -394,7 +395,7 @@ class ActivitiesFrame(Frame):
         self.activities_number_label.configure(bg='#2b2b2b', fg='#c0c0c0')
 
     def update_combobox(self):
-        values = list(range(len(get_activities()) + 1))
+        values = list(range(len(get_json_data()['activities']) + 1))
         self.activities_number_combobox['values'] = values
 
     def get_amount_of_activities(self) -> int:
@@ -411,7 +412,7 @@ class ActivitiesFrame(Frame):
 
     def fill_listbox(self):
         self.update_combobox()
-        activities_dict = get_activities()
+        activities_dict = get_json_data()['activities']
         for activity in activities_dict.keys():
             self.listbox.insert(tk.END, Activity(activities_dict[activity]).get_string())
 
@@ -445,7 +446,7 @@ class Routine(ObjectFrame):
 
     def get_string(self) -> str:
         pluses_minuses = ''
-        for index in range(len(get_work_blocks())):
+        for index in range(len(get_json_data()['work_blocks'])):
             if index in self.active_work_blocks:
                 pluses_minuses += '+'
             else:
@@ -475,9 +476,9 @@ class Pleasure(ObjectFrame):
 
     def __update_json(self):
         """Update pleasure in json"""
-        pleasures = get_pleasures()
+        pleasures = get_json_data()['pleasures']
         pleasures[self.name] = self.dictionary()
-        write_pleasures(pleasures)
+        write_json_data_by_key(pleasures, 'pleasures')
 
     def get_string(self):
         return "{:44s} {:2d}%".format(self.name, self.probability.get())
@@ -740,7 +741,7 @@ class RoutineGetter(ObjectGetter):
                 "active_work_blocks": self.active_work_blocks}
 
     def fill_listboxes(self):
-        work_blocks = get_work_blocks()
+        work_blocks = get_json_data()['work_blocks']
         index = 0
         for work_block in work_blocks:
             work_block_object = WorkBlock(work_block)
@@ -958,53 +959,16 @@ def get_json_data():
         return json.load(file)
 
 
-def get_pleasures() -> dict:
-    """Get pleasures"""
-    return get_json_data()['pleasures']
-
-
-def get_schedule() -> list:
-    """Get schedule without work blocks"""
-    return get_json_data()['schedule']
-
-
-def get_routines() -> dict:
-    """Get routines"""
-    return get_json_data()['routines']
-
-
-def get_work_blocks() -> list:
-    """Get work blocks"""
-    return get_json_data()['work_blocks']
-
-
-def get_activities() -> dict:
-    """Get activities"""
-    return get_json_data()['activities']
-
-
-def get_theme() -> str:
-    """Get theme"""
-    return get_json_data()['theme']
-
-
 def write_json_data(data) -> None:
     """Update the json"""
     with open('data.json', 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 
-def write_pleasures(pleasures: dict) -> None:
-    """Update pleasures"""
+def write_json_data_by_key(new_data, key: str) -> None:
+    """Update something in json"""
     data = get_json_data()
-    data['pleasures'] = pleasures
-    write_json_data(data)
-
-
-def write_theme(theme: str) -> None:
-    """Update theme"""
-    data = get_json_data()
-    data['theme'] = theme
+    data[key] = new_data
     write_json_data(data)
 
 
