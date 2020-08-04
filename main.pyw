@@ -194,6 +194,7 @@ class Frame(ABC):
         self.delete_button = None
         self.bottom_button_frame = tk.Frame(self.frame)
         self.top_button_frame = tk.Frame(self.frame)
+        self.theme = None
 
     @abstractmethod
     def pack(self, side, anchor):
@@ -223,6 +224,7 @@ class Frame(ABC):
         self.delete_button.configure(state=tk.DISABLED)
 
     def set_theme(self, theme: dict):
+        self.theme = theme
         self.frame.configure(bg=theme['frame'], fg=theme['fg'])
         self.listbox.configure(bg=theme['listbox'], fg=theme['fg'])
         for slave in self.bottom_button_frame.pack_slaves() + self.top_button_frame.pack_slaves():
@@ -235,7 +237,8 @@ class PleasuresFrame(Frame):
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         add_pleasure = tk.Button(self.bottom_button_frame, text=TEXT['add_pleasure'],
-                                 command=lambda: PleasureGetter(self.main).pack(), font=BUTTON_FONT, width=15)
+                                 command=lambda: PleasureGetter(self.main, self.theme).pack(),
+                                 font=BUTTON_FONT, width=15)
         self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.change_pleasure_window, font=BUTTON_FONT, width=15)
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT["delete"], state=tk.DISABLED,
@@ -274,9 +277,11 @@ class ScheduleFrame(Frame):
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_paragraph_or_work_block, font=BUTTON_FONT, width=23)
         add_schedule_paragraph = tk.Button(self.top_button_frame, text=TEXT['add_paragraph'], width=23,
-                                           command=lambda: ParagraphGetter(self.main).pack(), font=BUTTON_FONT)
+                                           command=lambda: ParagraphGetter(self.main, self.theme).pack(),
+                                           font=BUTTON_FONT)
         add_work_block = tk.Button(self.top_button_frame, text=TEXT['add_work_block'], width=23,
-                                   command=lambda: WorkBlockGetter(self.main).pack(), font=BUTTON_FONT)
+                                   command=lambda: WorkBlockGetter(self.main, self.theme).pack(),
+                                   font=BUTTON_FONT)
         add_schedule_paragraph.pack(side=tk.LEFT)
         add_work_block.pack(side=tk.LEFT)
         self.redact_button.pack(side=tk.LEFT)
@@ -324,7 +329,8 @@ class RoutinesFrame(Frame):
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_routine, font=BUTTON_FONT, width=15)
         add_routine = tk.Button(self.bottom_button_frame, text=TEXT['add_task'], width=15,
-                                command=lambda: RoutineGetter(self.main).pack(), font=BUTTON_FONT)
+                                command=lambda: RoutineGetter(self.main, self.theme).pack(),
+                                font=BUTTON_FONT)
         add_routine.pack(side=tk.LEFT)
         self.redact_button.pack(side=tk.LEFT)
         self.delete_button.pack(side=tk.LEFT)
@@ -366,7 +372,8 @@ class ActivitiesFrame(Frame):
                                                        values=[0], font=BUTTON_FONT)
         self.activities_number_combobox.current(0)
         self.add_button = tk.Button(self.bottom_button_frame, text=TEXT['add_activity'], width=15,
-                                    command=lambda: ActivityGetter(self.main).pack(), font=BUTTON_FONT)
+                                    command=lambda: ActivityGetter(self.main, self.theme).pack(),
+                                    font=BUTTON_FONT)
         self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT['redact'], state=tk.DISABLED,
                                        command=self.redact_activity, font=BUTTON_FONT, width=15)
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
@@ -533,10 +540,10 @@ class SimpleGetter(ABC):
 class NameGetter(SimpleGetter):
     """Entry for name of something"""
 
-    def __init__(self, window, name=''):
+    def __init__(self, window, theme: dict, name=''):
         super().__init__(window)
-        self.name_label = tk.Label(self.frame, text=TEXT['name'])
-        self.name_entry = tk.Entry(self.frame)
+        self.name_label = tk.Label(self.frame, text=TEXT['name'], fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
+        self.name_entry = tk.Entry(self.frame, bg=theme['entry'], fg=theme['entry_fg'], font=BUTTON_FONT)
         if name:
             self.name_entry.insert(tk.END, name)
 
@@ -554,16 +561,17 @@ class NameGetter(SimpleGetter):
 class TimeGetter(SimpleGetter):
     """Entry for time of something"""
 
-    def __init__(self, window, text, time=0):
+    def __init__(self, window, theme: dict, text, time=0):
         super().__init__(window)
+        self.theme = theme
         minutes = time % 60
         hours = time // 60
         minutes_list = list(range(0, 60, 5))
         hours_list = list(range(0, 25))
-        self.label = tk.Label(self.frame, text=text)
-        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2)
+        self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
+        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2, font=BUTTON_FONT)
         self.hours_entry.current(hours_list.index(hours))  # choose zero as a default hour
-        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2)
+        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2, font=BUTTON_FONT)
         self.minutes_entry.current(minutes_list.index(minutes))  # choose zero as a default minute
 
     def pack(self):
@@ -571,7 +579,7 @@ class TimeGetter(SimpleGetter):
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.hours_entry.pack(side=tk.LEFT)
-        tk.Label(self.frame, text=':').pack(side=tk.LEFT)
+        tk.Label(self.frame, text=':', bg=self.theme["label"], fg=self.theme["fg"], font=BUTTON_FONT).pack(side=tk.LEFT)
         self.minutes_entry.pack(side=tk.LEFT)
 
     def get(self):
@@ -581,10 +589,10 @@ class TimeGetter(SimpleGetter):
 
 class NumberGetter(SimpleGetter):
     """Entry for getting a number"""
-    def __init__(self, window, text, default_number=''):
+    def __init__(self, window, theme: dict, text, default_number=''):
         super().__init__(window)
-        self.label = tk.Label(self.frame, text=text)
-        self.duration_entry = tk.Entry(self.frame, width=3)
+        self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
+        self.duration_entry = tk.Entry(self.frame, width=3, fg=theme['entry_fg'], bg=theme['entry'], font=BUTTON_FONT)
         if default_number:
             self.duration_entry.insert(tk.END, default_number)
 
@@ -606,12 +614,13 @@ class NumberGetter(SimpleGetter):
 class ObjectGetter(ABC):
     """Window with entries for objects like pleasures and work blocks"""
 
-    def __init__(self, master: Main):
+    def __init__(self, master: Main, theme: dict):
         self.master = master
         self.window = tk.Tk()
         self.okay_button = tk.Button(self.window, text="OK", font=BUTTON_FONT,
-                                     command=self.append_to_json)
-        self.error_label = tk.Label(self.window, fg='red')
+                                     command=self.append_to_json, fg=theme['fg'], bg=theme['button'])
+        self.error_label = tk.Label(self.window, fg='red', bg=theme['label'], font=BUTTON_FONT)
+        self.window.configure(bg=theme['window'])
 
     @abstractmethod
     def pack(self):
@@ -632,10 +641,10 @@ class ObjectGetter(ABC):
 class PleasureGetter(ObjectGetter):
     """Window with entries for pleasure"""
 
-    def __init__(self, master: Main, name='', probability=''):
-        super().__init__(master)
-        self.name_frame = NameGetter(self.window, name)
-        self.probability = NumberGetter(self.window, TEXT['probability'], probability)
+    def __init__(self, master: Main, theme: dict, name='', probability=''):
+        super().__init__(master, theme)
+        self.name_frame = NameGetter(self.window, theme, name=name)
+        self.probability = NumberGetter(self.window, theme, TEXT['probability'], probability)
         self.old_name = name
 
     def pack(self):
@@ -669,12 +678,12 @@ class PleasureGetter(ObjectGetter):
 class ParagraphGetter(ObjectGetter):
     """Window with entries for schedule paragraph"""
 
-    def __init__(self, master: Main, name='', start=0, end=0):
-        super().__init__(master)
+    def __init__(self, master: Main, theme: dict, name='', start=0, end=0):
+        super().__init__(master, theme)
         self.old_paragraph = {"name": name, "start": start, "end": end}
-        self.name_frame = NameGetter(self.window, name)
-        self.start_frame = TimeGetter(self.window, TEXT['start'], start)
-        self.end_frame = TimeGetter(self.window, TEXT['end'], end)
+        self.name_frame = NameGetter(self.window, theme, name=name)
+        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], start)
+        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
 
     def pack(self):
         """Create a window and run it"""
@@ -707,20 +716,20 @@ class ParagraphGetter(ObjectGetter):
 class RoutineGetter(ObjectGetter):
     """Window with entries for routine"""
 
-    def __init__(self, master: Main, name='', duration=0, active_work_blocks=None):
-        super().__init__(master)
+    def __init__(self, master: Main, theme: dict, name='', duration=0, active_work_blocks=None):
+        super().__init__(master, theme)
         if active_work_blocks is None:
             active_work_blocks = []
-        self.name_frame = NameGetter(self.window, name)
-        self.duration_frame = TimeGetter(self.window, TEXT['duration'], duration)
+        self.name_frame = NameGetter(self.window, theme, name=name)
+        self.duration_frame = TimeGetter(self.window, theme, TEXT['duration'], duration)
         self.active_work_blocks = active_work_blocks
 
         self.bottom_frame = tk.Frame(self.window)
-        self.off_frame = tk.LabelFrame(self.bottom_frame, text=TEXT["won't_get_in"])
-        self.off_listbox = tk.Listbox(self.off_frame, width=40)
+        self.off_frame = tk.LabelFrame(self.bottom_frame, text=TEXT["won't_get_in"], bg=theme["frame"], fg=theme["fg"])
+        self.off_listbox = tk.Listbox(self.off_frame, width=40, bg=theme["listbox"], fg=theme["fg"], font=BUTTON_FONT)
 
-        self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'])
-        self.on_listbox = tk.Listbox(self.on_frame, width=40)
+        self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'], bg=theme["frame"], fg=theme["fg"])
+        self.on_listbox = tk.Listbox(self.on_frame, width=40, bg=theme["listbox"], fg=theme["fg"], font=BUTTON_FONT)
 
         self.old_name = name
 
@@ -791,12 +800,12 @@ class RoutineGetter(ObjectGetter):
 class WorkBlockGetter(ObjectGetter):
     """Window with entries for work block"""
 
-    def __init__(self, master: Main, start=0, end=0, duration=0):
-        super().__init__(master)
+    def __init__(self, master: Main, theme: dict, start=0, end=0, duration=0):
+        super().__init__(master, theme)
         self.old_work_block = {"start": start, "end": end, "duration": duration}
-        self.start_frame = TimeGetter(self.window, TEXT['start'], start)
-        self.end_frame = TimeGetter(self.window, TEXT['end'], end)
-        self.duration_frame = TimeGetter(self.window, TEXT['work_duration'], duration)
+        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], start)
+        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
+        self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], duration)
 
     def pack(self):
         """Create a new window and run it"""
@@ -829,11 +838,11 @@ class WorkBlockGetter(ObjectGetter):
 
 
 class ActivityGetter(ObjectGetter):
-    def __init__(self, master: Main, name='', weight=''):
-        super().__init__(master)
+    def __init__(self, master: Main, theme: dict, name='', weight=''):
+        super().__init__(master, theme)
         self.name = name
-        self.name_frame = NameGetter(self.window, name)
-        self.weight = NumberGetter(self.window, TEXT['weight'], weight)
+        self.name_frame = NameGetter(self.window, theme, name=name)
+        self.weight = NumberGetter(self.window, theme, TEXT['weight'], weight)
 
     def pack(self):
         self.name_frame.pack()
@@ -1036,10 +1045,12 @@ THEMES = dict()
 THEMES['light'] = {"textbox": "SystemWindow", "menu": "SystemMenu",
                    "button": "SystemButtonFace", "window": "SystemButtonFace",
                    "frame": "SystemButtonFace", "listbox": "SystemWindow",
-                   "label": "SystemButtonFace", "fg": "black"}
+                   "label": "SystemButtonFace", "entry": "SystemWindow",
+                   "fg": "black", "entry_fg": "black"}
 THEMES['dark'] = {"textbox": "#2b2b2b", "menu": "#2b2b2b",
                   "button": "#2b2b2b", "window": "#2b2b2b",
                   "frame": "#2b2b2b", "listbox": "#2b2b2b",
-                  "label": "#2b2b2b", "fg": "#c0c0c0"}
+                  "label": "#2b2b2b", "entry": "SystemWindow",
+                  "fg": "#c0c0c0", "entry_fg": "black"}
 
 Main()
