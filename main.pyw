@@ -1006,34 +1006,50 @@ def write_json_data_by_key(new_data, key: str) -> None:
     write_json_data(data)
 
 
-def update_data():
+def update_data(default_data):
     """Fill the database with missing keys"""
     data = get_json_data()
-    for key in DEFAULT_DATA_DICT:
+    for key in default_data:
         if key not in data.keys():
-            data[key] = DEFAULT_DATA_DICT[key]
+            data[key] = default_data[key]
     write_json_data(data)
 
 
-DEFAULT_DATA_DICT = {"pleasures": {}, "schedule": [], "work_blocks": [], "routines": {}, "activities": {},
-                     "language": "", "theme": "light"}
-if not isfile("data.json"):
-    write_json_data(DEFAULT_DATA_DICT)
-else:
-    update_data()
+def create_or_update_json_file():
+    default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
+                    "routines": {}, "activities": {},
+                    "language": "", "theme": "light"}
+    if not isfile("data.json"):
+        write_json_data(default_data)
+    else:
+        update_data(default_data)
 
-LANGUAGE = get_json_data()["language"]
-if not LANGUAGE:
-    LANGUAGE = LanguageGetter().pack()
-    DATA = get_json_data()
-    DATA['language'] = LANGUAGE
-    write_json_data(DATA)
-TREE = ElTr.parse('languages/{}.xml'.format(LANGUAGE))
-ROOT = TREE.getroot()
-TEXT = dict()
-for child in ROOT:
-    TEXT[child.attrib['key']] = child.text
+
+def get_language():
+    language = get_json_data()["language"]
+    if not language:
+        language = LanguageGetter().pack()
+        data = get_json_data()
+        data['language'] = language
+        write_json_data(data)
+    return language
+
+
+def get_text(language: str):
+    tree = ElTr.parse('languages/{}.xml'.format(language))
+    root = tree.getroot()
+    text = dict()
+    for child in root:
+        text[child.attrib['key']] = child.text
+    return text
+
+
+create_or_update_json_file()
+LANGUAGE = get_language()
+TEXT = get_text(LANGUAGE)
 
 BUTTON_FONT = ("Courier", 10)
+
+THEMES = dict()
 
 Main()
