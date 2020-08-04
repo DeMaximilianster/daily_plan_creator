@@ -654,6 +654,7 @@ class PleasureGetter(ObjectGetter):
         super().__init__(master)
         self.name_frame = NameGetter(self.window, name)
         self.probability = NumberGetter(self.window, TEXT['probability'], probability)
+        self.old_name = name
 
     def pack(self):
         self.name_frame.pack()
@@ -665,6 +666,8 @@ class PleasureGetter(ObjectGetter):
         if self.probability.inputed_correctly():
             paragraph = self.paragraph()
             data = get_json_data()
+            if self.old_name in data['pleasures']:
+                data['pleasures'].pop(self.old_name)
             data['pleasures'][self.name()] = paragraph
             write_json_data(data)
             self.master.pleasures_frame.update()
@@ -737,6 +740,8 @@ class RoutineGetter(ObjectGetter):
         self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'])
         self.on_listbox = tk.Listbox(self.on_frame, width=40)
 
+        self.old_name = name
+
     def pack(self):
         """Create a new window and run it"""
         self.name_frame.pack()
@@ -755,6 +760,8 @@ class RoutineGetter(ObjectGetter):
         """Write data about routine to json"""
         paragraph = self.paragraph()
         data = get_json_data()
+        if self.old_name in data['routines']:
+            data['routines'].pop(self.old_name)
         data['routines'][self.name()] = paragraph
         write_json_data(data)
         self.master.routines_frame.update()
