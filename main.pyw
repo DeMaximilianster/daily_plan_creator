@@ -20,8 +20,8 @@ class Main:
         self.main_menu = tk.Menu(self.main_window)
         self.main_window.config(menu=self.main_menu)
         self.appearance_menu = tk.Menu(self.main_menu, tearoff=0)
-        self.appearance_menu.add_command(label=TEXT["light"], command=self.light_theme)
-        self.appearance_menu.add_command(label=TEXT["dark"], command=self.dark_theme)
+        self.appearance_menu.add_command(label=TEXT["light"], command=lambda: self.set_theme("light"))
+        self.appearance_menu.add_command(label=TEXT["dark"], command=lambda: self.set_theme("dark"))
         self.main_menu.add_cascade(label=TEXT["theme"], menu=self.appearance_menu)
 
         self.left_frame = tk.Frame()
@@ -37,35 +37,21 @@ class Main:
         self.textbox = tk.Text(self.main_window, height=32, width=55)
         self.__pack()
         theme = get_json_data()['theme']
-        if theme == "light":
-            self.light_theme()
-        elif theme == "dark":
-            self.dark_theme()
+        self.set_theme(theme)
         self.main_window.mainloop()  # this must be the last instruction because it activates the window
 
-    def light_theme(self):
-        write_json_data_by_key("light", "theme")
-        self.main_window.configure(bg='SystemButtonFace')
-        self.textbox.configure(bg='SystemWindow', fg='black')
-        self.go_button.configure(bg='SystemButtonFace', fg='black')
-        self.main_menu.configure(bg='SystemMenu', fg='black')
-        self.appearance_menu.configure(bg='SystemMenu', fg='black')
-        self.activities_frame.light_theme()
-        self.pleasures_frame.light_theme()
-        self.routines_frame.light_theme()
-        self.schedule_frame.light_theme()
-
-    def dark_theme(self):
-        write_json_data_by_key("dark", "theme")
-        self.main_window.configure(bg='#2b2b2b')
-        self.textbox.configure(bg='#2b2b2b', fg='#c0c0c0')
-        self.go_button.configure(bg='#2b2b2b', fg='#c0c0c0')
-        self.main_menu.configure(bg='#2b2b2b', fg='#c0c0c0')
-        self.appearance_menu.configure(bg='#2b2b2b', fg='#c0c0c0')
-        self.activities_frame.dark_theme()
-        self.pleasures_frame.dark_theme()
-        self.routines_frame.dark_theme()
-        self.schedule_frame.dark_theme()
+    def set_theme(self, theme_name: str):
+        theme = THEMES[theme_name]
+        write_json_data_by_key(theme_name, "theme")
+        self.main_window.configure(bg=theme['window'])
+        self.textbox.configure(bg=theme['textbox'], fg=theme['fg'])
+        self.go_button.configure(bg=theme['button'], fg=theme['fg'])
+        self.main_menu.configure(bg=theme['menu'], fg=theme['fg'])
+        self.appearance_menu.configure(bg=theme['menu'], fg=theme['fg'])
+        self.schedule_frame.set_theme(theme)
+        self.routines_frame.set_theme(theme)
+        self.pleasures_frame.set_theme(theme)
+        self.activities_frame.set_theme(theme)
 
     def __pack(self):
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y)
@@ -230,17 +216,11 @@ class Frame(ABC):
         self.redact_button.configure(state=tk.DISABLED)
         self.delete_button.configure(state=tk.DISABLED)
 
-    def light_theme(self):
-        self.frame.configure(bg='SystemButtonFace', fg='black')
-        self.listbox.configure(bg='SystemWindow', fg='black')
+    def set_theme(self, theme: dict):
+        self.frame.configure(bg=theme['frame'], fg=theme['fg'])
+        self.listbox.configure(bg=theme['listbox'], fg=theme['fg'])
         for slave in self.bottom_button_frame.pack_slaves() + self.top_button_frame.pack_slaves():
-            slave.configure(bg='SystemButtonFace', fg='black')
-
-    def dark_theme(self):
-        self.frame.configure(bg='#2b2b2b', fg='#c0c0c0')
-        self.listbox.configure(bg='#2b2b2b', fg='#c0c0c0')
-        for slave in self.bottom_button_frame.pack_slaves()+self.top_button_frame.pack_slaves():
-            slave.configure(bg='#2b2b2b', fg='#ffffff')
+            slave.configure(bg=theme['button'], fg=theme['fg'])
 
 
 class PleasuresFrame(Frame):
@@ -386,13 +366,9 @@ class ActivitiesFrame(Frame):
         self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_activity, font=BUTTON_FONT, width=15)
 
-    def light_theme(self):
-        super().light_theme()
-        self.activities_number_label.configure(bg='SystemButtonFace', fg='black')
-
-    def dark_theme(self):
-        super().dark_theme()
-        self.activities_number_label.configure(bg='#2b2b2b', fg='#c0c0c0')
+    def set_theme(self, theme: dict):
+        super().set_theme(theme)
+        self.activities_number_label.configure(bg=theme['label'], fg=theme['fg'])
 
     def update_combobox(self):
         values = list(range(len(get_json_data()['activities']) + 1))
@@ -1051,5 +1027,13 @@ TEXT = get_text(LANGUAGE)
 BUTTON_FONT = ("Courier", 10)
 
 THEMES = dict()
+THEMES['light'] = {"textbox": "SystemWindow", "menu": "SystemMenu",
+                   "button": "SystemButtonFace", "window": "SystemButtonFace",
+                   "frame": "SystemButtonFace", "listbox": "SystemWindow",
+                   "label": "SystemButtonFace", "fg": "black"}
+THEMES['dark'] = {"textbox": "#2b2b2b", "menu": "#2b2b2b",
+                  "button": "#2b2b2b", "window": "#2b2b2b",
+                  "frame": "#2b2b2b", "listbox": "#2b2b2b",
+                  "label": "#2b2b2b", "fg": "#c0c0c0"}
 
 Main()
