@@ -255,7 +255,7 @@ class PleasuresFrame(Frame):
 
     def change_pleasure_window(self):
         dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
-        PleasureGetter(self.main, **dictionary).pack()
+        PleasureGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_pleasure(self):
         data = get_json_data()
@@ -302,9 +302,9 @@ class ScheduleFrame(Frame):
     def redact_schedule(self):
         dictionary = create_work_block_or_paragraph_dict_by_string(self.listbox.get(tk.ACTIVE))
         if 'duration' in dictionary:
-            WorkBlockGetter(self.main, **dictionary).pack()
+            WorkBlockGetter(self.main, self.theme, **dictionary).pack()
         else:
-            ParagraphGetter(self.main, **dictionary).pack()
+            ParagraphGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_paragraph_or_work_block(self):
         data = get_json_data()
@@ -342,7 +342,7 @@ class RoutinesFrame(Frame):
 
     def redact_routine(self):
         dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
-        RoutineGetter(self.main, **dictionary).pack()
+        RoutineGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_routine(self):
         data = get_json_data()
@@ -407,7 +407,7 @@ class ActivitiesFrame(Frame):
 
     def redact_activity(self):
         dictionary = create_activity_dict_by_string(self.listbox.get(tk.ACTIVE))
-        ActivityGetter(self.main, **dictionary).pack()
+        ActivityGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_activity(self):
         data = get_json_data()
