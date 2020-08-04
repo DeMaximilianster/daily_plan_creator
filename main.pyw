@@ -186,7 +186,10 @@ class Frame(ABC):
         self.name = name
         self.main = main
         self.frame = tk.LabelFrame(master, text=name)
-        self.listbox = tk.Listbox(self.frame, width=48, height=13, font=("Courier", 10))
+        self.listbox_scrollbar_frame = tk.Frame(self.frame)
+        self.scrollbar = tk.Scrollbar(self.listbox_scrollbar_frame)
+        self.listbox = tk.Listbox(self.listbox_scrollbar_frame, width=48, height=13, font=BUTTON_FONT,
+                                  yscrollcommand=self.scrollbar.set)
         self.redact_button = None
         self.delete_button = None
         self.bottom_button_frame = tk.Frame(self.frame)
@@ -196,9 +199,12 @@ class Frame(ABC):
     def pack(self, side, anchor):
         self.fill_listbox()
         self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
-        self.listbox.pack(side=tk.TOP)
+        self.listbox_scrollbar_frame.pack(side=tk.TOP)
+        self.listbox.pack(side=tk.LEFT)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.top_button_frame.pack()
         self.bottom_button_frame.pack()
+        self.scrollbar.config(command=self.listbox.yview)
 
     @abstractmethod
     def fill_listbox(self):
