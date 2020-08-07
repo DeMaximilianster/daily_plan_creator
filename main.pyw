@@ -368,9 +368,13 @@ class ActivitiesFrame(Frame):
         self.activities_number_frame = tk.Frame(self.frame)
         self.activities_number_label = tk.Label(self.activities_number_frame, font=BUTTON_FONT,
                                                 text=TEXT["how_many_activities"])
+        self.activities_number_variable = tk.IntVar(value=get_json_data()['activities_number'])
+        values = list(range(len(get_json_data()['activities']) + 1))
         self.activities_number_combobox = ttk.Combobox(self.activities_number_frame, width=2,
-                                                       values=[0], font=BUTTON_FONT)
-        self.activities_number_combobox.current(0)
+                                                       values=values, font=BUTTON_FONT,
+                                                       textvariable=self.activities_number_variable)
+        self.activities_number_variable.trace('w', lambda *_: self.update_activities_number())
+        self.activities_number_combobox.current(get_json_data()['activities_number'])
         self.add_button = tk.Button(self.bottom_button_frame, text=TEXT['add_activity'], width=15,
                                     command=lambda: ActivityGetter(self.main, self.theme).pack(),
                                     font=BUTTON_FONT)
@@ -386,6 +390,8 @@ class ActivitiesFrame(Frame):
     def update_combobox(self):
         values = list(range(len(get_json_data()['activities']) + 1))
         self.activities_number_combobox['values'] = values
+        if self.activities_number_variable.get() > values[-1]:  # not in range
+            self.activities_number_combobox.set(values[-1])
 
     def get_amount_of_activities(self) -> int:
         return int(self.activities_number_combobox.get())
@@ -400,7 +406,6 @@ class ActivitiesFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
-        self.update_combobox()
         activities_dict = get_json_data()['activities']
         for activity in activities_dict.keys():
             self.listbox.insert(tk.END, Activity(activities_dict[activity]).get_string())
@@ -416,6 +421,10 @@ class ActivitiesFrame(Frame):
         self.disable_buttons()
         data['activities'].pop(dictionary['name'])
         write_json_data(data)
+        self.update_combobox()
+
+    def update_activities_number(self):
+        write_json_data_by_key(self.activities_number_variable.get(), 'activities_number')
 
 
 class ObjectFrame(ABC):
@@ -448,29 +457,10 @@ class Pleasure(ObjectFrame):
 
     def __init__(self, dictionary: dict):
         self.name = dictionary['name']
-        self.probability = tk.IntVar(value=dictionary['probability'])
-        self.probability.trace('w', lambda *args: self.__update_json())
-
-    def get_probability(self) -> int:
-        """Get probability in entry"""
-        try:
-            probability = self.probability.get()
-        except tk.TclError:
-            probability = 0
-        return probability
-
-    def dictionary(self):
-        """Get data about pleasure as dictionary"""
-        return {"name": self.name, "probability": self.get_probability()}
-
-    def __update_json(self):
-        """Update pleasure in json"""
-        pleasures = get_json_data()['pleasures']
-        pleasures[self.name] = self.dictionary()
-        write_json_data_by_key(pleasures, 'pleasures')
+        self.probability = dictionary['probability']
 
     def get_string(self):
-        return "{:44s} {:2d}%".format(self.name, self.probability.get())
+        return "{:44s} {:2d}%".format(self.name, self.probability)
 
 
 class Paragraph(ObjectFrame):
@@ -480,9 +470,6 @@ class Paragraph(ObjectFrame):
         self.name = dictionary["name"]
         self.start = dictionary["start"]
         self.end = dictionary["end"]
-
-    def dictionary(self):
-        return {"name": self.name, "start": self.start, "end": self.end}
 
     def get_string(self) -> str:
         """Get string with paragraph info"""
@@ -860,6 +847,7 @@ class ActivityGetter(ObjectGetter):
             write_json_data(data)
             self.master.activities_frame.update()
             self.window.destroy()
+            self.master.activities_frame.update_combobox()
         else:
             self.error_label["text"] = TEXT["number_input_error"]
 
@@ -1008,7 +996,7 @@ def update_data(default_data):
 
 def create_or_update_json_file():
     default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
-                    "routines": {}, "activities": {},
+                    "routines": {}, "activities": {}, "activities_number": 0,
                     "language": "", "theme": "light"}
     if not isfile("data.json"):
         write_json_data(default_data)
