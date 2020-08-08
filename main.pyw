@@ -38,7 +38,18 @@ class Main:
         self.__pack()
         theme = get_json_data()['theme']
         self.set_theme(theme)
+        self.main_window.bind_all("<Control-Key>", self.textbox_binds)
         self.main_window.mainloop()  # this must be the last instruction because it activates the window
+
+    def textbox_binds(self, event):
+        if event.keycode == 65:  # a
+            self.textbox.tag_add(tk.SEL, "1.0", tk.END)
+        elif event.keycode == 67:  # c
+            self.textbox.event_generate("<<Copy>>")
+        elif event.keycode == 88:  # x
+            self.textbox.event_generate("<<Cut>>")
+        elif event.keycode == 86:  # v
+            self.textbox.event_generate("<<Paste>>")
 
     def set_theme(self, theme_name: str):
         theme = THEMES[theme_name]
