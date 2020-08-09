@@ -23,6 +23,7 @@ class Main:
         self.appearance_menu.add_command(label=TEXT["light"], command=lambda: self.set_theme("light"))
         self.appearance_menu.add_command(label=TEXT["dark"], command=lambda: self.set_theme("dark"))
         self.main_menu.add_cascade(label=TEXT["theme"], menu=self.appearance_menu)
+        self.main_menu.add_command(label=TEXT['help'], command=self.display_help)
 
         self.left_frame = tk.Frame()
         self.pleasures_frame = PleasuresFrame(self, self.left_frame, TEXT['pleasures'])
@@ -33,13 +34,22 @@ class Main:
         self.routines_frame = RoutinesFrame(self, self.right_frame, TEXT['tasks'])
 
         self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'], command=self.__make_schedule,
-                                   height=1, width=27, font=("Courier", 20))
-        self.textbox = tk.Text(self.main_window, height=32, width=55)
+                                   height=1, width=32, font=("Courier", 20))
+        self.textbox = tk.Text(self.main_window, height=34, width=65, wrap=tk.WORD, font=BUTTON_FONT)
         self.__pack()
-        theme = get_json_data()['theme']
+        data = get_json_data()
+        theme = data['theme']
         self.set_theme(theme)
         self.main_window.bind_all("<Control-Key>", self.textbox_binds)
+        if not data['was_help_shown']:
+            self.display_help()
         self.main_window.mainloop()  # this must be the last instruction because it activates the window
+
+    def display_help(self):
+        self.textbox.delete('1.0', tk.END)  # Clear text
+        for index in range(1, 9):
+            self.textbox.insert(tk.END, TEXT['help_text_{}'.format(index)]+'\n\n')
+        write_json_data_by_key(True, "was_help_shown")
 
     def textbox_binds(self, event):
         if event.keycode == 65:  # a
@@ -199,7 +209,7 @@ class Frame(ABC):
         self.frame = tk.LabelFrame(master, text=name)
         self.listbox_scrollbar_frame = tk.Frame(self.frame)
         self.scrollbar = tk.Scrollbar(self.listbox_scrollbar_frame)
-        self.listbox = tk.Listbox(self.listbox_scrollbar_frame, width=48, height=13, font=BUTTON_FONT,
+        self.listbox = tk.Listbox(self.listbox_scrollbar_frame, width=48, height=14, font=BUTTON_FONT,
                                   yscrollcommand=self.scrollbar.set)
         self.redact_button = None
         self.delete_button = None
@@ -1008,7 +1018,7 @@ def update_data(default_data):
 def create_or_update_json_file():
     default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
                     "routines": {}, "activities": {}, "activities_number": 0,
-                    "language": "", "theme": "light"}
+                    "language": "", "theme": "light", "was_help_shown": False}
     if not isfile("data.json"):
         write_json_data(default_data)
     else:

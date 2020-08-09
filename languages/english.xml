@@ -5,12 +5,12 @@
     <string key="schedule">Schedule</string>
     <string key="tasks">Tasks</string>
     <string key="create_plan">Go!</string>
-    <string key="failed_to_create">Failed to create schedule bacause tasks don't fit to work blocks</string>
+    <string key="failed_to_create">Failed to create schedule because tasks don't fit to work blocks</string>
     <string key="pleasure_forbidden">Pleasure [{}] is forbidden</string>
     <string key="any_activity">Any activity</string>
     <string key="work_cycle">Work cycle [{}]</string>
     <string key="rest">Rest</string>
-    <string key="redact">Redact</string>
+    <string key="redact">Edit</string>
     <string key="delete">Delete</string>
     <string key="add_pleasure">Add</string>
     <string key="add_paragraph">Add paragraph</string>
@@ -34,4 +34,14 @@
     <string key="work_block_duration_error">Work duration can't be longer than block duration</string>
     <string key="number_input_error">Enter natural number</string>
     <string key="work_block_in_name_error">Don't use "Work block" in your name</string>
+    <string key="help">Help</string>
+    <string key="help_text_1">Welcome to Daily Plan Creator! This generator is created to make plans without boring routine. How to use:</string>
+    <string key="help_text_2">Pleasures. Enter pleasure's name and probability of this pleasure to be allowed in the next plan (why it's important - youtu.be/9QiE-M1LrZk)</string>
+    <string key="help_text_3">Schedule, paragraphs. Enter paragraph's name, start and end time</string>
+    <string key="help_text_4">Schedule, work blocks. Enter work block's start time, end time and amount of time for tasks and work. When plan is being generated, work block fills with tasks (about them later) and "work cycles". Work cycle is just a paragraph where you work, then rest at the end. Also activity is assigned to work cycle (about them later). Block's left time will be time to rest</string>
+    <string key="help_text_5">Activities. Those ones that are assigned to work cycles. Just enter activity's name and weight. Higher the weight, higher the chance this activity will be in your next schedule and in your work cycles. Also choose amount of activities that will be in your next schedule</string>
+    <string key="help_text_6">Tasks. Enter task's name, amount of time to do and work blocks in which this task may appear</string>
+    <string key="help_text_7">When all preparations are complete, just press the "Go!" and your plan will be waiting for you. Have a great time using this program!</string>
+    <string key="help_text_8">For bugs or grammar errors reports or for expression of gratitude: Telegram @DeMaximilianster; Source: github.com/DeMaximilianster/daily_plan_creator</string>
+
 </strings>
