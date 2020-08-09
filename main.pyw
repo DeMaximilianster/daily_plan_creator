@@ -1041,15 +1041,15 @@ TEXT = get_text(LANGUAGE)
 BUTTON_FONT = ("Courier", 10)
 
 THEMES = dict()
-THEMES['light'] = {"textbox": "SystemWindow", "menu": "SystemMenu",
-                   "button": "SystemButtonFace", "window": "SystemButtonFace",
-                   "frame": "SystemButtonFace", "listbox": "SystemWindow",
-                   "label": "SystemButtonFace", "entry": "SystemWindow",
+THEMES['light'] = {"textbox": "white", "menu": "#f0f0f0",
+                   "button": "#f0f0f0", "window": "#f0f0f0",
+                   "frame": "#f0f0f0", "listbox": "white",
+                   "label": "#f0f0f0", "entry": "white",
                    "fg": "black", "entry_fg": "black"}
 THEMES['dark'] = {"textbox": "#2b2b2b", "menu": "#2b2b2b",
                   "button": "#2b2b2b", "window": "#2b2b2b",
                   "frame": "#2b2b2b", "listbox": "#2b2b2b",
-                  "label": "#2b2b2b", "entry": "SystemWindow",
+                  "label": "#2b2b2b", "entry": "white",
                   "fg": "#c0c0c0", "entry_fg": "black"}
 
 Main()
