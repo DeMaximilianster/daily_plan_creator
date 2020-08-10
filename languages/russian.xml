@@ -34,6 +34,8 @@
     <string key="work_block_duration_error">Длительность работы не может превышать длительности блока</string>
     <string key="number_input_error">Введите натуральное число</string>
     <string key="work_block_in_name_error">Не используйте "Блок работы" в названии</string>
+    <string key="start_and_end_time_error">Конец должен быть позже начала</string>
+    <string key="min_and_max_time_error">Максимальное время должно быть больше минимального</string>
     <string key="help">Помощь</string>
     <string key="help_text_1">Добро пожаловать в Daily Plan Creator! Этот генератор создан с целью составлять планы без скучной рутинности. Как пользоваться:</string>
     <string key="help_text_2">Удовольствия. Введите название удовольствия и вероятность, что в следующем расписании вам оно будет разрешено (почему это важно - youtu.be/9QiE-M1LrZk)</string>
@@ -43,5 +45,8 @@
     <string key="help_text_6">Дела. Введите название, сколько времени займёт, а так же циклы работы в которые это занятие может попасть.</string>
     <string key="help_text_7">Когда все подготовки завершены, просто нажмите на "Вперёд!" и ваше расписание будет вас ждать. Приятного использования!</string>
     <string key="help_text_8">Для уведомления о багах, грамматических ошибках или для выражения благодарности: Telegram @DeMaximilianster; Исходники: github.com/DeMaximilianster/daily_plan_creator</string>
+    <string key="work_cycle_config">Настройки циклов работы</string>
+    <string key="min_time">Минимальная длительность цикла работы</string>
+    <string key="max_time">Максимальная длительность цикла работы</string>
 
 </strings>

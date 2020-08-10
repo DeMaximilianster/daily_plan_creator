@@ -17,8 +17,14 @@ class Main:
         self.main_window.title("Daily plan creator")
         self.main_window.resizable(0, 0)  # user can't change size of a main window
 
+        data = get_json_data()
+        theme = data['theme']
+        theme_dict = THEMES[theme]
+        # Menu
         self.main_menu = tk.Menu(self.main_window)
         self.main_window.config(menu=self.main_menu)
+        self.main_menu.add_command(label=TEXT['work_cycle_config'], command=lambda:
+                                   WorkCycleConfigGetter(self, theme_dict).pack())
         self.appearance_menu = tk.Menu(self.main_menu, tearoff=0)
         self.appearance_menu.add_command(label=TEXT["light"], command=lambda: self.set_theme("light"))
         self.appearance_menu.add_command(label=TEXT["dark"], command=lambda: self.set_theme("dark"))
@@ -37,8 +43,6 @@ class Main:
                                    height=1, width=32, font=("Courier", 20))
         self.textbox = tk.Text(self.main_window, height=34, width=65, wrap=tk.WORD, font=BUTTON_FONT)
         self.__pack()
-        data = get_json_data()
-        theme = data['theme']
         self.set_theme(theme)
         self.main_window.bind_all("<Control-Key>", self.textbox_binds)
         if not data['was_help_shown']:
@@ -143,18 +147,23 @@ class Main:
 
     def insert_work_block(self, schedule_paragraph, start_minute, end_minute, activities):
         """Insert work block data to textbox"""
+        # Preparing variables
+        data = get_json_data()
+        min_time = data["work_cycle_min_time"]
+        max_time = data["work_cycle_max_time"]
         activities = dict(activities)
         minutes_of_work = schedule_paragraph['duration']
         sequence = schedule_paragraph['routines']
         minutes_of_rest = end_minute - start_minute - minutes_of_work
+
         for routine in sequence:
             minutes_of_work -= routine['duration']
-        while minutes_of_work >= 45:
+        while minutes_of_work >= min_time:
             if activities:
                 activity = choose_one_activity(activities)["name"]
             else:
                 activity = TEXT['any_activity']
-            time_block = choice(range(45, min(120, minutes_of_work) + 1, 15))
+            time_block = choice(range(min_time, min(max_time, minutes_of_work) + 1, 5))
             sequence.append({'name': TEXT["work_cycle"].format(activity), 'duration': time_block})
             minutes_of_work -= time_block
         minutes_of_rest += minutes_of_work
@@ -641,9 +650,30 @@ class ObjectGetter(ABC):
     def append_to_json(self):
         """Append data about object to json-file"""
 
-    @abstractmethod
-    def paragraph(self):
-        """Get data about object as dictionary"""
+
+class WorkCycleConfigGetter(ObjectGetter):
+    """Window to configure work blocks"""
+
+    def __init__(self, master: Main, theme: dict):
+        super().__init__(master, theme)
+        data = get_json_data()
+        self.min_time = TimeGetter(self.window, theme, TEXT["min_time"], data['work_cycle_min_time'])
+        self.max_time = TimeGetter(self.window, theme, TEXT["max_time"], data['work_cycle_max_time'])
+
+    def pack(self):
+        self.min_time.pack()
+        self.max_time.pack()
+        super().pack()
+
+    def append_to_json(self):
+        if self.min_time.get() > self.max_time.get():
+            self.error_label['text'] = TEXT["min_and_max_time_error"]
+        else:
+            data = get_json_data()
+            data['work_cycle_min_time'] = self.min_time.get()
+            data['work_cycle_max_time'] = self.max_time.get()
+            write_json_data(data)
+            self.window.destroy()
 
 
 class PleasureGetter(ObjectGetter):
@@ -702,7 +732,11 @@ class ParagraphGetter(ObjectGetter):
 
     def append_to_json(self):
         """Write data about schedule paragraph into json"""
-        if TEXT["work_block"] not in self.name_frame.get():
+        if TEXT["work_block"] in self.name_frame.get():
+            self.error_label["text"] = TEXT["work_block_in_name_error"]
+        elif self.end_frame.get() < self.start_frame.get():
+            self.error_label["text"] = TEXT["start_and_end_time_error"]
+        else:
             paragraph = self.paragraph()
             data = get_json_data()
             if self.old_paragraph in data['schedule']:
@@ -711,8 +745,6 @@ class ParagraphGetter(ObjectGetter):
             write_json_data(data)
             self.master.schedule_frame.update()
             self.window.destroy()
-        else:
-            self.error_label["text"] = TEXT["work_block_in_name_error"]
 
     def paragraph(self) -> dict:
         """Get paragraph properties as dictionary"""
@@ -825,7 +857,11 @@ class WorkBlockGetter(ObjectGetter):
     def append_to_json(self):
         """Write data about work block into json"""
         paragraph = self.paragraph()
-        if paragraph['end'] - paragraph['start'] >= paragraph['duration']:
+        if paragraph['end'] < paragraph['start']:
+            self.error_label["text"] = TEXT["start_and_end_time_error"]
+        elif paragraph['end'] - paragraph['start'] < paragraph['duration']:
+            self.error_label['text'] = TEXT['work_block_duration_error']
+        else:
             data = get_json_data()
             if self.old_work_block in data['work_blocks']:
                 data['work_blocks'].remove(self.old_work_block)
@@ -835,8 +871,6 @@ class WorkBlockGetter(ObjectGetter):
             self.master.schedule_frame.update()
             self.master.routines_frame.update()
             self.window.destroy()
-        else:
-            self.error_label['text'] = TEXT['work_block_duration_error']
 
     def paragraph(self) -> dict:
         """Get work block properties as dictionary"""
@@ -1018,6 +1052,7 @@ def update_data(default_data):
 def create_or_update_json_file():
     default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
                     "routines": {}, "activities": {}, "activities_number": 0,
+                    "work_cycle_min_time": 45, "work_cycle_max_time": 120,
                     "language": "", "theme": "light", "was_help_shown": False}
     if not isfile("data.json"):
         write_json_data(default_data)

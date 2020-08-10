@@ -34,6 +34,8 @@
     <string key="work_block_duration_error">Work duration can't be longer than block duration</string>
     <string key="number_input_error">Enter natural number</string>
     <string key="work_block_in_name_error">Don't use "Work block" in your name</string>
+    <string key="start_and_end_time_error">The end must be after the start</string>
+    <string key="min_and_max_time_error">Max duration should be longer than min duration</string>
     <string key="help">Help</string>
     <string key="help_text_1">Welcome to Daily Plan Creator! This generator is created to make plans without boring routine. How to use:</string>
     <string key="help_text_2">Pleasures. Enter pleasure's name and probability of this pleasure to be allowed in the next plan (why it's important - youtu.be/9QiE-M1LrZk)</string>
@@ -43,5 +45,8 @@
     <string key="help_text_6">Tasks. Enter task's name, amount of time to do and work blocks in which this task may appear</string>
     <string key="help_text_7">When all preparations are complete, just press the "Go!" and your plan will be waiting for you. Have a great time using this program!</string>
     <string key="help_text_8">For bugs or grammar errors reports or for expression of gratitude: Telegram @DeMaximilianster; Source: github.com/DeMaximilianster/daily_plan_creator</string>
+    <string key="work_cycle_config">Work cycles' configuration</string>
+    <string key="min_time">Minimal work cycle's duration</string>
+    <string key="max_time">Maximal work cycle's duration</string>
 
 </strings>
