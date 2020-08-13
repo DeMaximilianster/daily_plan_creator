@@ -48,5 +48,8 @@
     <string key="work_cycle_config">Настройки циклов работы</string>
     <string key="min_time">Минимальная длительность цикла работы</string>
     <string key="max_time">Максимальная длительность цикла работы</string>
+    <string key="duration:">Длительность:</string>
+    <string key="instant">мгновенная</string>
+    <string key="negative">отрицательная</string>
 
 </strings>

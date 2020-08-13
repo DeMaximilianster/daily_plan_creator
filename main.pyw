@@ -580,16 +580,23 @@ class TimeGetter(SimpleGetter):
 
     def __init__(self, window, theme: dict, text, time=0):
         super().__init__(window)
+        self.start_observers = []
+        self.end_observers = []
         self.theme = theme
-        minutes = time % 60
-        hours = time // 60
+        self.minutes = tk.IntVar(master=window, value=time % 60)
+        self.hours = tk.IntVar(master=window, value=time // 60)
         minutes_list = list(range(0, 60, 5))
         hours_list = list(range(0, 25))
         self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
-        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2, font=BUTTON_FONT)
-        self.hours_entry.current(hours_list.index(hours))  # choose zero as a default hour
-        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2, font=BUTTON_FONT)
-        self.minutes_entry.current(minutes_list.index(minutes))  # choose zero as a default minute
+        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2, font=BUTTON_FONT,
+                                        textvariable=self.hours)
+        self.hours_entry.current(hours_list.index(self.hours.get()))  # choose zero as a default hour
+        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2, font=BUTTON_FONT,
+                                          textvariable=self.minutes)
+        self.minutes_entry.current(minutes_list.index(self.minutes.get()))  # choose zero as a default minute
+
+        self.minutes.trace('w', lambda *_: self.update())
+        self.hours.trace('w', lambda *_: self.update())
 
     def pack(self):
         """Pack frame"""
@@ -602,6 +609,18 @@ class TimeGetter(SimpleGetter):
     def get(self):
         """Get time"""
         return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get())
+
+    def register_start_observer(self, observer):
+        self.start_observers.append(observer)
+
+    def register_end_observer(self, observer):
+        self.end_observers.append(observer)
+
+    def update(self):
+        for observer in self.start_observers:
+            observer.update_start(self.get())
+        for observer in self.end_observers:
+            observer.update_end(self.get())
 
 
 class NumberGetter(SimpleGetter):
@@ -723,11 +742,16 @@ class ParagraphGetter(ObjectGetter):
         self.start_frame = TimeGetter(self.window, theme, TEXT['start'], start)
         self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
 
+        self.duration_label = DurationLabel(self.window, theme, start, end)
+        self.start_frame.register_start_observer(self.duration_label)
+        self.end_frame.register_end_observer(self.duration_label)
+
     def pack(self):
         """Create a window and run it"""
         self.name_frame.pack()
         self.start_frame.pack()
         self.end_frame.pack()
+        self.duration_label.pack()
         super().pack()
 
     def append_to_json(self):
@@ -847,10 +871,15 @@ class WorkBlockGetter(ObjectGetter):
         self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
         self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], duration)
 
+        self.duration_label = DurationLabel(self.window, theme, start, end)
+        self.start_frame.register_start_observer(self.duration_label)
+        self.end_frame.register_end_observer(self.duration_label)
+
     def pack(self):
         """Create a new window and run it"""
         self.start_frame.pack()
         self.end_frame.pack()
+        self.duration_label.pack()
         self.duration_frame.pack()
         super().pack()
 
@@ -909,6 +938,35 @@ class ActivityGetter(ObjectGetter):
     def paragraph(self) -> dict:
         """Get data about activity as dictionary"""
         return {'name': self.name_frame.get(), 'weight': self.weight.get()}
+
+
+class DurationLabel:
+
+    def __init__(self, master, theme: dict, start_time: int, end_time: int):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.label = tk.Label(master, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
+        self._update_label()
+
+    def pack(self):
+        self.label.pack()
+
+    def update_start(self, new_start: int):
+        self.start_time = new_start
+        self._update_label()
+
+    def update_end(self, new_end: int):
+        self.end_time = new_end
+        self._update_label()
+
+    def _update_label(self):
+        duration = self.end_time-self.start_time
+        if duration > 0:
+            self.label['text'] = TEXT['duration:'] + ' ' + minutes_to_time(duration)
+        elif duration == 0:
+            self.label['text'] = TEXT['duration:'] + ' ' + TEXT['instant']
+        else:
+            self.label['text'] = TEXT['duration:'] + ' ' + TEXT['negative']
 
 
 def choose_activities(activities: dict, number: int):

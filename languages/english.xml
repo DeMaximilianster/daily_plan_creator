@@ -48,5 +48,8 @@
     <string key="work_cycle_config">Work cycles' configuration</string>
     <string key="min_time">Minimal work cycle's duration</string>
     <string key="max_time">Maximal work cycle's duration</string>
+    <string key="duration:">Duration:</string>
+    <string key="instant">instant</string>
+    <string key="negative">negative</string>
 
 </strings>
