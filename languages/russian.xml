@@ -51,5 +51,8 @@
     <string key="duration:">Длительность:</string>
     <string key="instant">мгновенная</string>
     <string key="negative">отрицательная</string>
+    <string key="scrollbars">Колёса прокрутки</string>
+    <string key="show">Показать</string>
+    <string key="hide">Спрятать</string>
 
 </strings>

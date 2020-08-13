@@ -29,6 +29,10 @@ class Main:
         self.appearance_menu.add_command(label=TEXT["light"], command=lambda: self.set_theme("light"))
         self.appearance_menu.add_command(label=TEXT["dark"], command=lambda: self.set_theme("dark"))
         self.main_menu.add_cascade(label=TEXT["theme"], menu=self.appearance_menu)
+        self.scrollbars_menu = tk.Menu(self.main_menu, tearoff=0)
+        self.scrollbars_menu.add_command(label=TEXT["show"], command=self.pack_scrollbars)
+        self.scrollbars_menu.add_command(label=TEXT['hide'], command=self.unpack_scrollbars)
+        self.main_menu.add_cascade(label=TEXT["scrollbars"], menu=self.scrollbars_menu)
         self.main_menu.add_command(label=TEXT['help'], command=self.display_help)
 
         self.left_frame = tk.Frame()
@@ -41,7 +45,10 @@ class Main:
 
         self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'], command=self.__make_schedule,
                                    height=1, width=32, font=("Courier", 20))
-        self.textbox = tk.Text(self.main_window, height=34, width=65, wrap=tk.WORD, font=BUTTON_FONT)
+        self.textbox_frame = tk.Frame(self.main_window)
+        self.scrollbar = tk.Scrollbar(self.textbox_frame)
+        self.textbox = tk.Text(self.textbox_frame, height=34, width=65, wrap=tk.WORD, font=BUTTON_FONT,
+                               yscrollcommand=self.scrollbar.set)
         self.__pack()
         self.set_theme(theme)
         self.main_window.bind_all("<Control-Key>", self.textbox_binds)
@@ -73,10 +80,27 @@ class Main:
         self.go_button.configure(bg=theme['button'], fg=theme['fg'])
         self.main_menu.configure(bg=theme['menu'], fg=theme['fg'])
         self.appearance_menu.configure(bg=theme['menu'], fg=theme['fg'])
+        self.scrollbars_menu.configure(bg=theme['menu'], fg=theme['fg'])
         self.schedule_frame.set_theme(theme)
         self.routines_frame.set_theme(theme)
         self.pleasures_frame.set_theme(theme)
         self.activities_frame.set_theme(theme)
+
+    def pack_scrollbars(self):
+        write_json_data_by_key(True, "show_scrollbars")
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.activities_frame.pack_scrollbar()
+        self.pleasures_frame.pack_scrollbar()
+        self.routines_frame.pack_scrollbar()
+        self.schedule_frame.pack_scrollbar()
+
+    def unpack_scrollbars(self):
+        write_json_data_by_key(False, "show_scrollbars")
+        self.scrollbar.pack_forget()
+        self.activities_frame.unpack_scrollbar()
+        self.pleasures_frame.unpack_scrollbar()
+        self.routines_frame.unpack_scrollbar()
+        self.schedule_frame.unpack_scrollbar()
 
     def __pack(self):
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y)
@@ -87,7 +111,10 @@ class Main:
         self.schedule_frame.pack(tk.BOTTOM, tk.N)
         self.routines_frame.pack(tk.TOP, tk.S)
         self.go_button.pack(side=tk.BOTTOM, anchor=tk.S)
-        self.textbox.pack()
+        self.textbox_frame.pack()
+        self.textbox.pack(side=tk.LEFT)
+        if get_json_data()['show_scrollbars']:
+            self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def __make_schedule(self):
         """Make a schedule based on options"""
@@ -232,10 +259,10 @@ class Frame(ABC):
         self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
         self.listbox_scrollbar_frame.pack(side=tk.TOP)
         self.listbox.pack(side=tk.LEFT)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        if get_json_data()["show_scrollbars"]:
+            self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.top_button_frame.pack()
         self.bottom_button_frame.pack()
-        self.scrollbar.config(command=self.listbox.yview)
 
     @abstractmethod
     def fill_listbox(self):
@@ -259,6 +286,12 @@ class Frame(ABC):
         self.listbox.configure(bg=theme['listbox'], fg=theme['fg'])
         for slave in self.bottom_button_frame.pack_slaves() + self.top_button_frame.pack_slaves():
             slave.configure(bg=theme['button'], fg=theme['fg'])
+
+    def pack_scrollbar(self):
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def unpack_scrollbar(self):
+        self.scrollbar.pack_forget()
 
 
 class PleasuresFrame(Frame):
@@ -1111,7 +1144,8 @@ def create_or_update_json_file():
     default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
                     "routines": {}, "activities": {}, "activities_number": 0,
                     "work_cycle_min_time": 45, "work_cycle_max_time": 120,
-                    "language": "", "theme": "light", "was_help_shown": False}
+                    "language": "", "theme": "light", "show_scrollbars": True,
+                    "was_help_shown": False}
     if not isfile("data.json"):
         write_json_data(default_data)
     else:
