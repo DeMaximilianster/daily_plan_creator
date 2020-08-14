@@ -26,7 +26,8 @@ class Main:
         self.main_menu.add_command(label=TEXT['work_cycle_config'], command=lambda:
                                    WorkCycleConfigGetter(self, theme_dict).pack())
         self.appearance_menu = tk.Menu(self.main_menu, tearoff=0)
-        self.appearance_menu.add_command(label=TEXT["light"], command=lambda: self.set_theme("light"))
+        self.appearance_menu.add_command(label=TEXT["light"],
+                                         command=lambda: self.set_theme("light"))
         self.appearance_menu.add_command(label=TEXT["dark"], command=lambda: self.set_theme("dark"))
         self.main_menu.add_cascade(label=TEXT["theme"], menu=self.appearance_menu)
         self.scrollbars_menu = tk.Menu(self.main_menu, tearoff=0)
@@ -43,26 +44,31 @@ class Main:
         self.schedule_frame = ScheduleFrame(self, self.right_frame, TEXT['schedule'])
         self.routines_frame = RoutinesFrame(self, self.right_frame, TEXT['tasks'])
 
-        self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'], command=self.__make_schedule,
+        self.go_button = tk.Button(self.main_window, text=TEXT['create_plan'],
+                                   command=self.__make_schedule,
                                    height=1, width=32, font=("Courier", 20))
         self.textbox_frame = tk.Frame(self.main_window)
         self.scrollbar = tk.Scrollbar(self.textbox_frame)
-        self.textbox = tk.Text(self.textbox_frame, height=34, width=65, wrap=tk.WORD, font=BUTTON_FONT,
+        self.textbox = tk.Text(self.textbox_frame, height=34, width=65,
+                               wrap=tk.WORD, font=BUTTON_FONT,
                                yscrollcommand=self.scrollbar.set)
         self.__pack()
         self.set_theme(theme)
         self.main_window.bind_all("<Control-Key>", self.textbox_binds)
         if not data['was_help_shown']:
             self.display_help()
-        self.main_window.mainloop()  # this must be the last instruction because it activates the window
+        self.main_window.mainloop()  # this must be the last instruction
+        # because it activates the window
 
     def display_help(self):
+        """Show help in the textbox"""
         self.textbox.delete('1.0', tk.END)  # Clear text
         for index in range(1, 9):
             self.textbox.insert(tk.END, TEXT['help_text_{}'.format(index)]+'\n\n')
         write_json_data_by_key(True, "was_help_shown")
 
     def textbox_binds(self, event):
+        """Bind the textbox so you don't need English-keyboard acitvated"""
         if event.keycode == 65:  # a
             self.textbox.tag_add(tk.SEL, "1.0", tk.END)
         elif event.keycode == 67:  # c
@@ -73,6 +79,7 @@ class Main:
             self.textbox.event_generate("<<Paste>>")
 
     def set_theme(self, theme_name: str):
+        """Set the theme"""
         theme = THEMES[theme_name]
         write_json_data_by_key(theme_name, "theme")
         self.main_window.configure(bg=theme['window'])
@@ -87,6 +94,7 @@ class Main:
         self.activities_frame.set_theme(theme)
 
     def pack_scrollbars(self):
+        """Add all the scrollbars"""
         write_json_data_by_key(True, "show_scrollbars")
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.activities_frame.pack_scrollbar()
@@ -95,6 +103,7 @@ class Main:
         self.schedule_frame.pack_scrollbar()
 
     def unpack_scrollbars(self):
+        """Remove all the scrollbars"""
         write_json_data_by_key(False, "show_scrollbars")
         self.scrollbar.pack_forget()
         self.activities_frame.unpack_scrollbar()
@@ -140,7 +149,8 @@ class Main:
                     work_block['routines'].append(routine)
                     work_block['time_left'] -= routine['duration']
                     work_blocks[index] = work_block
-            # if work block duration is not exceeded by routines, then distribution completed successfully
+            # if work block duration is not exceeded by routines,
+            # then distribution completed successfully
             if all(work_block['time_left'] >= 0 for work_block in work_blocks):
                 break
             else:
@@ -155,12 +165,14 @@ class Main:
             end_minute = schedule_paragraph['end']
             start_minute = schedule_paragraph['start']
             if 'duration' in schedule_paragraph.keys():  # work block
-                self.insert_work_block(schedule_paragraph, start_minute, end_minute, chosen_activities)
+                self.insert_work_block(schedule_paragraph, start_minute,
+                                       end_minute, chosen_activities)
             else:  # just a paragraph
                 self.insert_paragraph(schedule_paragraph, start_minute, end_minute)
         for pleasure in get_json_data()['pleasures'].values():
             if random() * 100 > pleasure['probability']:
-                self.textbox.insert(tk.END, TEXT['pleasure_forbidden'].format(pleasure['name'])+'\n')
+                self.textbox.insert(tk.END, TEXT['pleasure_forbidden'].format(
+                    pleasure['name'])+'\n')
 
     def insert_paragraph(self, schedule_paragraph, start_minute, end_minute):
         """Insert paragraph data to textbox"""
@@ -210,6 +222,7 @@ class Main:
 
 
 class LanguageGetter:
+    """Window to get the language"""
 
     def __init__(self):
         self.window = tk.Tk()
@@ -238,6 +251,7 @@ class LanguageGetter:
 
 
 class Frame(ABC):
+    """A frame with listbox and buttons"""
 
     def __init__(self, main: Main, master, name: str):
         self.name = name
@@ -245,7 +259,8 @@ class Frame(ABC):
         self.frame = tk.LabelFrame(master, text=name)
         self.listbox_scrollbar_frame = tk.Frame(self.frame)
         self.scrollbar = tk.Scrollbar(self.listbox_scrollbar_frame)
-        self.listbox = tk.Listbox(self.listbox_scrollbar_frame, width=48, height=14, font=BUTTON_FONT,
+        self.listbox = tk.Listbox(self.listbox_scrollbar_frame,
+                                  width=48, height=14, font=BUTTON_FONT,
                                   yscrollcommand=self.scrollbar.set)
         self.redact_button = None
         self.delete_button = None
@@ -255,6 +270,7 @@ class Frame(ABC):
 
     @abstractmethod
     def pack(self, side, anchor):
+        """Pack the frame"""
         self.fill_listbox()
         self.frame.pack(side=side, anchor=anchor, fill=tk.BOTH)
         self.listbox_scrollbar_frame.pack(side=tk.TOP)
@@ -266,21 +282,25 @@ class Frame(ABC):
 
     @abstractmethod
     def fill_listbox(self):
-        pass
+        """Fill the listbox"""
 
     def update(self):
+        """Clear and fill listbox again"""
         self.listbox.delete(0, tk.END)
         self.fill_listbox()
 
     def activate_disabled_buttons(self):
+        """Enable redact and delete buttons"""
         self.redact_button.configure(state=tk.NORMAL)
         self.delete_button.configure(state=tk.NORMAL)
 
     def disable_buttons(self):
+        """Disable redact and delete buttons"""
         self.redact_button.configure(state=tk.DISABLED)
         self.delete_button.configure(state=tk.DISABLED)
 
     def set_theme(self, theme: dict):
+        """Set the theme in the frame"""
         self.theme = theme
         self.frame.configure(bg=theme['frame'], fg=theme['fg'])
         self.listbox.configure(bg=theme['listbox'], fg=theme['fg'])
@@ -288,39 +308,49 @@ class Frame(ABC):
             slave.configure(bg=theme['button'], fg=theme['fg'])
 
     def pack_scrollbar(self):
+        """Add the scrollbar"""
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     def unpack_scrollbar(self):
+        """Remove the scrollbar"""
         self.scrollbar.pack_forget()
 
 
 class PleasuresFrame(Frame):
+    """Frame with pleasures"""
 
     def pack(self, side, anchor):
+        """Pack the frame"""
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
         add_pleasure = tk.Button(self.bottom_button_frame, text=TEXT['add_pleasure'],
                                  command=lambda: PleasureGetter(self.main, self.theme).pack(),
                                  font=BUTTON_FONT, width=15)
-        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
-                                       command=self.change_pleasure_window, font=BUTTON_FONT, width=15)
-        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT["delete"], state=tk.DISABLED,
+        self.redact_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT["redact"], state=tk.DISABLED,
+                                       command=self.change_pleasure_window,
+                                       font=BUTTON_FONT, width=15)
+        self.delete_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT["delete"], state=tk.DISABLED,
                                        command=self.delete_pleasure, font=BUTTON_FONT, width=15)
         add_pleasure.pack(side=tk.LEFT)
         self.redact_button.pack(side=tk.LEFT)
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
+        """Fill the listbox with pleasures"""
         pleasures_dictionary = get_json_data()['pleasures']
         for pleasure in pleasures_dictionary:
             pleasure_object = Pleasure(pleasures_dictionary[pleasure])
             self.listbox.insert(tk.END, pleasure_object.get_string())
 
     def change_pleasure_window(self):
+        """Redact a pleasure"""
         dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
         PleasureGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_pleasure(self):
+        """Delete a pleasure"""
         data = get_json_data()
         dictionary = create_pleasure_dict_by_string(self.listbox.get(tk.ACTIVE))
         self.listbox.delete(tk.ACTIVE)
@@ -330,17 +360,23 @@ class PleasuresFrame(Frame):
 
 
 class ScheduleFrame(Frame):
+    """Frame for schedule, with work blocks and paragraphs"""
 
     def pack(self, side, anchor):
         """Create schedule frame"""
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
+        self.redact_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.redact_schedule, font=BUTTON_FONT, width=23)
-        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
-                                       command=self.delete_paragraph_or_work_block, font=BUTTON_FONT, width=23)
-        add_schedule_paragraph = tk.Button(self.top_button_frame, text=TEXT['add_paragraph'], width=23,
-                                           command=lambda: ParagraphGetter(self.main, self.theme).pack(),
+        self.delete_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT['delete'], state=tk.DISABLED,
+                                       command=self.delete_paragraph_or_work_block,
+                                       font=BUTTON_FONT, width=23)
+        add_schedule_paragraph = tk.Button(self.top_button_frame,
+                                           text=TEXT['add_paragraph'], width=23,
+                                           command=lambda: ParagraphGetter(self.main,
+                                                                           self.theme).pack(),
                                            font=BUTTON_FONT)
         add_work_block = tk.Button(self.top_button_frame, text=TEXT['add_work_block'], width=23,
                                    command=lambda: WorkBlockGetter(self.main, self.theme).pack(),
@@ -351,6 +387,7 @@ class ScheduleFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
+        """Fill the listboxs with work blocks and paragraphs"""
         data = get_json_data()
         schedule_list = data['schedule'] + data['work_blocks']
         schedule_list.sort(key=lambda x: x['start'])
@@ -363,6 +400,7 @@ class ScheduleFrame(Frame):
                 self.listbox.insert(tk.END, paragraph.get_string())
 
     def redact_schedule(self):
+        """Redact a paragraph or a work block"""
         dictionary = create_work_block_or_paragraph_dict_by_string(self.listbox.get(tk.ACTIVE))
         if 'duration' in dictionary:
             WorkBlockGetter(self.main, self.theme, **dictionary).pack()
@@ -370,6 +408,7 @@ class ScheduleFrame(Frame):
             ParagraphGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_paragraph_or_work_block(self):
+        """Delete a paragraph or a work block"""
         data = get_json_data()
         dictionary = create_work_block_or_paragraph_dict_by_string(self.listbox.get(tk.ACTIVE))
         self.listbox.delete(tk.ACTIVE)
@@ -384,12 +423,15 @@ class ScheduleFrame(Frame):
 
 
 class RoutinesFrame(Frame):
+    """Frame with routines"""
     def pack(self, side, anchor):
         super().pack(side, anchor)
         self.listbox.bind("<Button-1>", lambda _: self.activate_disabled_buttons())
-        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT["redact"], state=tk.DISABLED,
+        self.redact_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT["redact"], state=tk.DISABLED,
                                        command=self.redact_routine, font=BUTTON_FONT, width=15)
-        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
+        self.delete_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_routine, font=BUTTON_FONT, width=15)
         add_routine = tk.Button(self.bottom_button_frame, text=TEXT['add_task'], width=15,
                                 command=lambda: RoutineGetter(self.main, self.theme).pack(),
@@ -399,15 +441,18 @@ class RoutinesFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
+        """Fill the listbox with routines"""
         routines_dict = get_json_data()['routines']
         for routine in routines_dict.keys():
             self.listbox.insert(tk.END, Routine(routines_dict[routine]).get_string())
 
     def redact_routine(self):
+        """Redact a routine"""
         dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
         RoutineGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_routine(self):
+        """Delete a routine"""
         data = get_json_data()
         dictionary = create_routine_dict_by_string(self.listbox.get(tk.ACTIVE))
         self.listbox.delete(tk.ACTIVE)
@@ -416,6 +461,7 @@ class RoutinesFrame(Frame):
         write_json_data(data)
 
     def clear_active_work_blocks(self):
+        """Made active_work_blocks field blank in all routines"""
         data = get_json_data()
         for routine in data['routines']:
             data['routines'][routine]['active_work_blocks'] = []
@@ -424,6 +470,7 @@ class RoutinesFrame(Frame):
 
 
 class ActivitiesFrame(Frame):
+    """Frame with activities"""
 
     def __init__(self, main: Main, master, name: str):
         super().__init__(main, master, name)
@@ -441,9 +488,11 @@ class ActivitiesFrame(Frame):
         self.add_button = tk.Button(self.bottom_button_frame, text=TEXT['add_activity'], width=15,
                                     command=lambda: ActivityGetter(self.main, self.theme).pack(),
                                     font=BUTTON_FONT)
-        self.redact_button = tk.Button(self.bottom_button_frame, text=TEXT['redact'], state=tk.DISABLED,
+        self.redact_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT['redact'], state=tk.DISABLED,
                                        command=self.redact_activity, font=BUTTON_FONT, width=15)
-        self.delete_button = tk.Button(self.bottom_button_frame, text=TEXT['delete'], state=tk.DISABLED,
+        self.delete_button = tk.Button(self.bottom_button_frame,
+                                       text=TEXT['delete'], state=tk.DISABLED,
                                        command=self.delete_activity, font=BUTTON_FONT, width=15)
 
     def set_theme(self, theme: dict):
@@ -451,12 +500,14 @@ class ActivitiesFrame(Frame):
         self.activities_number_label.configure(bg=theme['label'], fg=theme['fg'])
 
     def update_combobox(self):
+        """Update the combobox of possible activities numbers"""
         values = list(range(len(get_json_data()['activities']) + 1))
         self.activities_number_combobox['values'] = values
         if self.activities_number_variable.get() > values[-1]:  # not in range
             self.activities_number_combobox.set(values[-1])
 
     def get_amount_of_activities(self) -> int:
+        """Get the amount of activities that will be in a plan"""
         return int(self.activities_number_combobox.get())
 
     def pack(self, side, anchor):
@@ -469,15 +520,18 @@ class ActivitiesFrame(Frame):
         self.delete_button.pack(side=tk.LEFT)
 
     def fill_listbox(self):
+        """Fill the listbox with activities"""
         activities_dict = get_json_data()['activities']
         for activity in activities_dict.keys():
             self.listbox.insert(tk.END, Activity(activities_dict[activity]).get_string())
 
     def redact_activity(self):
+        """Redact the activity"""
         dictionary = create_activity_dict_by_string(self.listbox.get(tk.ACTIVE))
         ActivityGetter(self.main, self.theme, **dictionary).pack()
 
     def delete_activity(self):
+        """Delete the activity"""
         data = get_json_data()
         dictionary = create_activity_dict_by_string(self.listbox.get(tk.ACTIVE))
         self.listbox.delete(tk.ACTIVE)
@@ -487,14 +541,16 @@ class ActivitiesFrame(Frame):
         self.update_combobox()
 
     def update_activities_number(self):
+        """Update the number of activities that will be in plan"""
         write_json_data_by_key(self.activities_number_variable.get(), 'activities_number')
 
 
 class ObjectFrame(ABC):
+    """One object in some frame"""
 
     @abstractmethod
     def get_string(self):
-        pass
+        """Get the string with info about this object"""
 
 
 class Routine(ObjectFrame):
@@ -564,6 +620,7 @@ class WorkBlock(ObjectFrame):
 
 
 class Activity(ObjectFrame):
+    """Activity in ActivitiesFrame"""
 
     def __init__(self, dictionary):
         self.name = dictionary["name"]
@@ -580,11 +637,11 @@ class SimpleGetter(ABC):
 
     @abstractmethod
     def pack(self):
-        pass
+        """Pack this SimpleGetter in some ObjectGetter"""
 
     @abstractmethod
     def get(self):
-        pass
+        """Get the data this Getter is responsible for"""
 
 
 class NameGetter(SimpleGetter):
@@ -592,8 +649,10 @@ class NameGetter(SimpleGetter):
 
     def __init__(self, window, theme: dict, name=''):
         super().__init__(window, theme)
-        self.name_label = tk.Label(self.frame, text=TEXT['name'], fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
-        self.name_entry = tk.Entry(self.frame, bg=theme['entry'], fg=theme['entry_fg'], font=BUTTON_FONT)
+        self.name_label = tk.Label(self.frame, text=TEXT['name'], fg=theme['fg'],
+                                   bg=theme['label'], font=BUTTON_FONT)
+        self.name_entry = tk.Entry(self.frame, bg=theme['entry'],
+                                   fg=theme['entry_fg'], font=BUTTON_FONT)
         if name:
             self.name_entry.insert(tk.END, name)
 
@@ -622,16 +681,25 @@ class TimeGetter(SimpleGetter):
         self.after_midnight = tk.IntVar(master=window, value=time // 1440 * 1440)
         minutes_list = list(range(0, 60, 5))
         hours_list = list(range(0, 24))
-        self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
-        self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2, font=BUTTON_FONT,
+        self.label = tk.Label(self.frame, text=text, fg=theme['fg'],
+                              bg=theme['label'], font=BUTTON_FONT)
+        self.hours_entry = ttk.Combobox(self.frame, values=hours_list,
+                                        width=2, font=BUTTON_FONT,
                                         textvariable=self.hours)
-        self.hours_entry.current(hours_list.index(self.hours.get()))  # choose zero as a default hour
-        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2, font=BUTTON_FONT,
+        self.hours_entry.current(hours_list.index(self.hours.get()))
+        # choose zero as a default hour
+
+        self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list,
+                                          width=2, font=BUTTON_FONT,
                                           textvariable=self.minutes)
-        self.minutes_entry.current(minutes_list.index(self.minutes.get()))  # choose zero as a default minute
-        self.checkbox = tk.Checkbutton(self.frame, onvalue=1440, offvalue=0, var=self.after_midnight,
+        self.minutes_entry.current(minutes_list.index(self.minutes.get()))
+        # choose zero as a default minute
+
+        self.checkbox = tk.Checkbutton(self.frame, onvalue=1440,
+                                       offvalue=0, var=self.after_midnight,
                                        bg=theme["label"], fg=theme["entry_fg"])
-        self.a_m_label = tk.Label(self.frame, text=TEXT["after_midnight"], bg=theme["label"], fg=theme["fg"])
+        self.a_m_label = tk.Label(self.frame, text=TEXT["after_midnight"],
+                                  bg=theme["label"], fg=theme["fg"])
 
         self.minutes.trace('w', lambda *_: self.update())
         self.hours.trace('w', lambda *_: self.update())
@@ -642,7 +710,8 @@ class TimeGetter(SimpleGetter):
         self.frame.pack()
         self.label.pack(side=tk.LEFT)
         self.hours_entry.pack(side=tk.LEFT)
-        tk.Label(self.frame, text=':', bg=self.theme["label"], fg=self.theme["fg"], font=BUTTON_FONT).pack(side=tk.LEFT)
+        tk.Label(self.frame, text=':', bg=self.theme["label"], fg=self.theme["fg"],
+                 font=BUTTON_FONT).pack(side=tk.LEFT)
         self.minutes_entry.pack(side=tk.LEFT)
         if self.after_midnight_check:
             self.checkbox.pack(side=tk.LEFT)
@@ -650,15 +719,20 @@ class TimeGetter(SimpleGetter):
 
     def get(self):
         """Get time"""
-        return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get()) + self.after_midnight.get()
+        hours = int(self.hours_entry.get())
+        minutes = int(self.minutes_entry.get())
+        return hours * 60 + minutes + self.after_midnight.get()
 
     def register_start_observer(self, observer):
+        """Add an observer for which's event this time is start"""
         self.start_observers.append(observer)
 
     def register_end_observer(self, observer):
+        """Add an observer for which's event this time is end"""
         self.end_observers.append(observer)
 
     def update(self):
+        """Update observers"""
         for observer in self.start_observers:
             observer.update_start(self.get())
         for observer in self.end_observers:
@@ -669,8 +743,10 @@ class NumberGetter(SimpleGetter):
     """Entry for getting a number"""
     def __init__(self, window, theme: dict, text, default_number=''):
         super().__init__(window, theme)
-        self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
-        self.duration_entry = tk.Entry(self.frame, width=3, fg=theme['entry_fg'], bg=theme['entry'], font=BUTTON_FONT)
+        self.label = tk.Label(self.frame, text=text, fg=theme['fg'],
+                              bg=theme['label'], font=BUTTON_FONT)
+        self.duration_entry = tk.Entry(self.frame, width=3, fg=theme['entry_fg'],
+                                       bg=theme['entry'], font=BUTTON_FONT)
         if default_number:
             self.duration_entry.insert(tk.END, default_number)
 
@@ -696,7 +772,8 @@ class ObjectGetter(ABC):
         self.master = master
         self.window = tk.Tk()
         self.okay_button = tk.Button(self.window, text="OK", font=BUTTON_FONT,
-                                     command=self.append_to_json, fg=theme['fg'], bg=theme['button'])
+                                     command=self.append_to_json,
+                                     fg=theme['fg'], bg=theme['button'])
         self.error_label = tk.Label(self.window, fg='red', bg=theme['label'], font=BUTTON_FONT)
         self.window.configure(bg=theme['window'])
 
@@ -718,8 +795,10 @@ class WorkCycleConfigGetter(ObjectGetter):
     def __init__(self, master: Main, theme: dict):
         super().__init__(master, theme)
         data = get_json_data()
-        self.min_time = TimeGetter(self.window, theme, TEXT["min_time"], data['work_cycle_min_time'])
-        self.max_time = TimeGetter(self.window, theme, TEXT["max_time"], data['work_cycle_max_time'])
+        self.min_time = TimeGetter(self.window, theme, TEXT["min_time"],
+                                   data['work_cycle_min_time'])
+        self.max_time = TimeGetter(self.window, theme, TEXT["max_time"],
+                                   data['work_cycle_max_time'])
 
     def pack(self):
         self.min_time.pack()
@@ -822,7 +901,7 @@ class ParagraphGetter(ObjectGetter):
 
 
 class RoutineGetter(ObjectGetter):
-    """Window with entries for routine"""
+    """Window with entries for routine to create or update one"""
 
     def __init__(self, master: Main, theme: dict, name='', duration=0, active_work_blocks=None):
         super().__init__(master, theme)
@@ -833,11 +912,15 @@ class RoutineGetter(ObjectGetter):
         self.active_work_blocks = active_work_blocks
 
         self.bottom_frame = tk.Frame(self.window)
-        self.off_frame = tk.LabelFrame(self.bottom_frame, text=TEXT["won't_get_in"], bg=theme["frame"], fg=theme["fg"])
-        self.off_listbox = tk.Listbox(self.off_frame, width=40, bg=theme["listbox"], fg=theme["fg"], font=BUTTON_FONT)
+        self.off_frame = tk.LabelFrame(self.bottom_frame, text=TEXT["won't_get_in"],
+                                       bg=theme["frame"], fg=theme["fg"])
+        self.off_listbox = tk.Listbox(self.off_frame, width=40, bg=theme["listbox"],
+                                      fg=theme["fg"], font=BUTTON_FONT)
 
-        self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'], bg=theme["frame"], fg=theme["fg"])
-        self.on_listbox = tk.Listbox(self.on_frame, width=40, bg=theme["listbox"], fg=theme["fg"], font=BUTTON_FONT)
+        self.on_frame = tk.LabelFrame(self.bottom_frame, text=TEXT['will_get_in'],
+                                      bg=theme["frame"], fg=theme["fg"])
+        self.on_listbox = tk.Listbox(self.on_frame, width=40, bg=theme["listbox"],
+                                     fg=theme["fg"], font=BUTTON_FONT)
 
         self.old_name = name
 
@@ -873,6 +956,7 @@ class RoutineGetter(ObjectGetter):
                 "active_work_blocks": self.active_work_blocks}
 
     def fill_listboxes(self):
+        """Fill listboxes"""
         work_blocks = get_json_data()['work_blocks']
         index = 0
         for work_block in work_blocks:
@@ -889,17 +973,23 @@ class RoutineGetter(ObjectGetter):
         return self.name_frame.get()
 
     def from_off_listbox_to_on(self):
+        """Move work block from off-listbox to on-listbox"""
         work_block = self.off_listbox.get(tk.ACTIVE)
         if work_block:
-            work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+            work_block_index = int(work_block.split(sep='.')[0]) - 1
+            # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+
             self.active_work_blocks.append(work_block_index)
             self.off_listbox.delete(tk.ACTIVE)
             self.on_listbox.insert(tk.END, work_block)
 
     def from_on_listbox_to_off(self):
+        """Move work block from on-listbox to off-listbox"""
         work_block = self.on_listbox.get(tk.ACTIVE)
         if work_block:
-            work_block_index = int(work_block.split(sep='.')[0]) - 1  # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+            work_block_index = int(work_block.split(sep='.')[0]) - 1
+            # '2. 14:30 - 21:00 Work block [03:00]' -> 1
+
             self.active_work_blocks.remove(work_block_index)
             self.on_listbox.delete(tk.ACTIVE)
             self.off_listbox.insert(tk.END, work_block)
@@ -913,7 +1003,8 @@ class WorkBlockGetter(ObjectGetter):
         self.old_work_block = {"start": start, "end": end, "duration": duration}
         self.start_frame = TimeGetter(self.window, theme, TEXT['start'], True, time=start)
         self.end_frame = TimeGetter(self.window, theme, TEXT['end'], True, time=end)
-        self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], False, time=duration)
+        self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], False,
+                                         time=duration)
 
         self.duration_label = DurationLabel(self.window, theme, start, end)
         self.start_frame.register_start_observer(self.duration_label)
@@ -955,6 +1046,7 @@ class WorkBlockGetter(ObjectGetter):
 
 
 class ActivityGetter(ObjectGetter):
+    """Window to create or update an activity"""
     def __init__(self, master: Main, theme: dict, name='', weight=''):
         super().__init__(master, theme)
         self.name = name
@@ -987,6 +1079,7 @@ class ActivityGetter(ObjectGetter):
 
 
 class DurationLabel:
+    """Label-observer to monitor start and end time of some event"""
 
     def __init__(self, master, theme: dict, start_time: int, end_time: int):
         self.start_time = start_time
@@ -995,13 +1088,16 @@ class DurationLabel:
         self._update_label()
 
     def pack(self):
+        """Pack the label"""
         self.label.pack()
 
     def update_start(self, new_start: int):
+        """Update the start time for the event"""
         self.start_time = new_start
         self._update_label()
 
     def update_end(self, new_end: int):
+        """Update the end time of the event"""
         self.end_time = new_end
         self._update_label()
 
@@ -1018,6 +1114,7 @@ class DurationLabel:
 
 
 def choose_activities(activities: dict, number: int):
+    """Choose activities for the plan"""
     activities = dict(activities)  # this will make sure parameter activities won't be changed
     chosen_activities = dict()
     weight_sum = 0
@@ -1033,12 +1130,12 @@ def choose_activities(activities: dict, number: int):
                 weight_sum -= activities[activity]["weight"]
                 activities.pop(activity)
                 break
-            else:
-                weight -= activities[activity]["weight"]
+            weight -= activities[activity]["weight"]
     return chosen_activities
 
 
 def choose_one_activity(activities):
+    """Choose ine activity for a work cycle"""
     activities = dict(activities)  # this will make sure parameter activities won't be changed
     chosen_activity = dict()
     weight_sum = 0
@@ -1052,8 +1149,7 @@ def choose_one_activity(activities):
             weight_sum -= activities[activity]["weight"]
             activities.pop(activity)
             break
-        else:
-            weight -= activities[activity]["weight"]
+        weight -= activities[activity]["weight"]
     return chosen_activity
 
 
@@ -1066,7 +1162,8 @@ def squeeze_activities_weight(activities: dict) -> dict:
             average_weight += activity["weight"]
         average_weight //= len(activities)
         for activity in activities:
-            activities[activity]["weight"] = (activities[activity]["weight"] + average_weight*2) // 3
+            activities[activity]["weight"] = \
+                (activities[activity]["weight"] + average_weight*2) // 3
     return activities
 
 
@@ -1097,6 +1194,7 @@ def create_pleasure_dict_by_string(string: str) -> dict:
 
 
 def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
+    """Create dict with work block's or paragraph's keys and values by string"""
     dictionary = dict()
     list_of_words = string.split()
     dictionary['start'] = time_to_minutes(list_of_words[0])
@@ -1109,13 +1207,15 @@ def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
     else:
         dictionary['end'] = dictionary['start']
     if TEXT['work_block'] in string:
-        dictionary['duration'] = time_to_minutes(list_of_words[-1][1:-1])  # Work block [hh:mm] -> minutes
+        dictionary['duration'] = time_to_minutes(list_of_words[-1][1:-1])
+        # Work block [hh:mm] -> minutes
     else:
         dictionary['name'] = ' '.join(list_of_words)
     return dictionary
 
 
 def create_routine_dict_by_string(string: str) -> dict:
+    """Create dict with routines's keys and values by string"""
     dictionary = dict()
     list_of_words = string.split()
     dictionary['name'] = ' '.join(list_of_words[:-2])
@@ -1128,6 +1228,7 @@ def create_routine_dict_by_string(string: str) -> dict:
 
 
 def create_activity_dict_by_string(string: str) -> dict:
+    """Create dict with activity's keys and values by string"""
     dictionary = dict()
     list_of_words = string.split()
     dictionary['name'] = ' '.join(list_of_words[:-1])
@@ -1164,6 +1265,7 @@ def update_data(default_data):
 
 
 def create_or_update_json_file():
+    """Creates json file if absent, else updates so json-file will keep up with upgrades"""
     default_data = {"pleasures": {}, "schedule": [], "work_blocks": [],
                     "routines": {}, "activities": {}, "activities_number": 0,
                     "work_cycle_min_time": 45, "work_cycle_max_time": 120,
@@ -1176,6 +1278,7 @@ def create_or_update_json_file():
 
 
 def get_language():
+    """Get the language"""
     language = get_json_data()["language"]
     if not language:
         language = LanguageGetter().pack()
@@ -1186,6 +1289,7 @@ def get_language():
 
 
 def get_text(language: str):
+    """Get the text dictionary"""
     tree = ElTr.parse('languages/{}.xml'.format(language))
     root = tree.getroot()
     text = dict()
