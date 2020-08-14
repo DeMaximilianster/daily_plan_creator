@@ -795,9 +795,9 @@ class WorkCycleConfigGetter(ObjectGetter):
     def __init__(self, master: Main, theme: dict):
         super().__init__(master, theme)
         data = get_json_data()
-        self.min_time = TimeGetter(self.window, theme, TEXT["min_time"],
+        self.min_time = TimeGetter(self.window, theme, TEXT["min_time"], False,
                                    data['work_cycle_min_time'])
-        self.max_time = TimeGetter(self.window, theme, TEXT["max_time"],
+        self.max_time = TimeGetter(self.window, theme, TEXT["max_time"], False,
                                    data['work_cycle_max_time'])
 
     def pack(self):
