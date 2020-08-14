@@ -512,7 +512,7 @@ class Routine(ObjectFrame):
                 pluses_minuses += '+'
             else:
                 pluses_minuses += '-'
-        return "{:30s}[{}] {}".format(self.name, minutes_to_time(self.duration), pluses_minuses)
+        return "{:30s}[{}] {}".format(self.name, minutes_to_duration(self.duration), pluses_minuses)
 
 
 class Pleasure(ObjectFrame):
@@ -555,7 +555,7 @@ class WorkBlock(ObjectFrame):
 
     def get_string(self) -> str:
         """Get a string with work block info"""
-        duration = minutes_to_time(self.duration)
+        duration = minutes_to_duration(self.duration)
         start_str = minutes_to_time(self.start)
         if self.start != self.end:
             end_str = minutes_to_time(self.end)
@@ -575,8 +575,8 @@ class Activity(ObjectFrame):
 
 class SimpleGetter(ABC):
     """Frame to get some data like name or time"""
-    def __init__(self, window):
-        self.frame = tk.Frame(window)
+    def __init__(self, window, theme: dict):
+        self.frame = tk.Frame(window, bg=theme["frame"])
 
     @abstractmethod
     def pack(self):
@@ -591,7 +591,7 @@ class NameGetter(SimpleGetter):
     """Entry for name of something"""
 
     def __init__(self, window, theme: dict, name=''):
-        super().__init__(window)
+        super().__init__(window, theme)
         self.name_label = tk.Label(self.frame, text=TEXT['name'], fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
         self.name_entry = tk.Entry(self.frame, bg=theme['entry'], fg=theme['entry_fg'], font=BUTTON_FONT)
         if name:
@@ -611,15 +611,17 @@ class NameGetter(SimpleGetter):
 class TimeGetter(SimpleGetter):
     """Entry for time of something"""
 
-    def __init__(self, window, theme: dict, text, time=0):
-        super().__init__(window)
+    def __init__(self, window, theme: dict, text, after_midnight_check: bool, time=0):
+        super().__init__(window, theme)
+        self.after_midnight_check = after_midnight_check
         self.start_observers = []
         self.end_observers = []
         self.theme = theme
         self.minutes = tk.IntVar(master=window, value=time % 60)
-        self.hours = tk.IntVar(master=window, value=time // 60)
+        self.hours = tk.IntVar(master=window, value=(time // 60) % 24)
+        self.after_midnight = tk.IntVar(master=window, value=time // 1440 * 1440)
         minutes_list = list(range(0, 60, 5))
-        hours_list = list(range(0, 25))
+        hours_list = list(range(0, 24))
         self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
         self.hours_entry = ttk.Combobox(self.frame, values=hours_list, width=2, font=BUTTON_FONT,
                                         textvariable=self.hours)
@@ -627,9 +629,13 @@ class TimeGetter(SimpleGetter):
         self.minutes_entry = ttk.Combobox(self.frame, values=minutes_list, width=2, font=BUTTON_FONT,
                                           textvariable=self.minutes)
         self.minutes_entry.current(minutes_list.index(self.minutes.get()))  # choose zero as a default minute
+        self.checkbox = tk.Checkbutton(self.frame, onvalue=1440, offvalue=0, var=self.after_midnight,
+                                       bg=theme["label"], fg=theme["entry_fg"])
+        self.a_m_label = tk.Label(self.frame, text=TEXT["after_midnight"], bg=theme["label"], fg=theme["fg"])
 
         self.minutes.trace('w', lambda *_: self.update())
         self.hours.trace('w', lambda *_: self.update())
+        self.after_midnight.trace('w', lambda *_: self.update())
 
     def pack(self):
         """Pack frame"""
@@ -638,10 +644,13 @@ class TimeGetter(SimpleGetter):
         self.hours_entry.pack(side=tk.LEFT)
         tk.Label(self.frame, text=':', bg=self.theme["label"], fg=self.theme["fg"], font=BUTTON_FONT).pack(side=tk.LEFT)
         self.minutes_entry.pack(side=tk.LEFT)
+        if self.after_midnight_check:
+            self.checkbox.pack(side=tk.LEFT)
+            self.a_m_label.pack(side=tk.LEFT)
 
     def get(self):
         """Get time"""
-        return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get())
+        return int(self.hours_entry.get()) * 60 + int(self.minutes_entry.get()) + self.after_midnight.get()
 
     def register_start_observer(self, observer):
         self.start_observers.append(observer)
@@ -659,7 +668,7 @@ class TimeGetter(SimpleGetter):
 class NumberGetter(SimpleGetter):
     """Entry for getting a number"""
     def __init__(self, window, theme: dict, text, default_number=''):
-        super().__init__(window)
+        super().__init__(window, theme)
         self.label = tk.Label(self.frame, text=text, fg=theme['fg'], bg=theme['label'], font=BUTTON_FONT)
         self.duration_entry = tk.Entry(self.frame, width=3, fg=theme['entry_fg'], bg=theme['entry'], font=BUTTON_FONT)
         if default_number:
@@ -772,8 +781,8 @@ class ParagraphGetter(ObjectGetter):
         super().__init__(master, theme)
         self.old_paragraph = {"name": name, "start": start, "end": end}
         self.name_frame = NameGetter(self.window, theme, name=name)
-        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], start)
-        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
+        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], True, time=start)
+        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], True, time=end)
 
         self.duration_label = DurationLabel(self.window, theme, start, end)
         self.start_frame.register_start_observer(self.duration_label)
@@ -793,6 +802,8 @@ class ParagraphGetter(ObjectGetter):
             self.error_label["text"] = TEXT["work_block_in_name_error"]
         elif self.end_frame.get() < self.start_frame.get():
             self.error_label["text"] = TEXT["start_and_end_time_error"]
+        elif self.end_frame.get() - self.start_frame.get() >= 1440:
+            self.error_label["text"] = TEXT["too_long_error"]
         else:
             paragraph = self.paragraph()
             data = get_json_data()
@@ -818,7 +829,7 @@ class RoutineGetter(ObjectGetter):
         if active_work_blocks is None:
             active_work_blocks = []
         self.name_frame = NameGetter(self.window, theme, name=name)
-        self.duration_frame = TimeGetter(self.window, theme, TEXT['duration'], duration)
+        self.duration_frame = TimeGetter(self.window, theme, TEXT['duration'], False, time=duration)
         self.active_work_blocks = active_work_blocks
 
         self.bottom_frame = tk.Frame(self.window)
@@ -900,9 +911,9 @@ class WorkBlockGetter(ObjectGetter):
     def __init__(self, master: Main, theme: dict, start=0, end=0, duration=0):
         super().__init__(master, theme)
         self.old_work_block = {"start": start, "end": end, "duration": duration}
-        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], start)
-        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], end)
-        self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], duration)
+        self.start_frame = TimeGetter(self.window, theme, TEXT['start'], True, time=start)
+        self.end_frame = TimeGetter(self.window, theme, TEXT['end'], True, time=end)
+        self.duration_frame = TimeGetter(self.window, theme, TEXT['work_duration'], False, time=duration)
 
         self.duration_label = DurationLabel(self.window, theme, start, end)
         self.start_frame.register_start_observer(self.duration_label)
@@ -923,6 +934,8 @@ class WorkBlockGetter(ObjectGetter):
             self.error_label["text"] = TEXT["start_and_end_time_error"]
         elif paragraph['end'] - paragraph['start'] < paragraph['duration']:
             self.error_label['text'] = TEXT['work_block_duration_error']
+        elif paragraph['end'] - paragraph['start'] >= 1440:
+            self.error_label['text'] = TEXT['too_long_error']
         else:
             data = get_json_data()
             if self.old_work_block in data['work_blocks']:
@@ -994,10 +1007,12 @@ class DurationLabel:
 
     def _update_label(self):
         duration = self.end_time-self.start_time
-        if duration > 0:
-            self.label['text'] = TEXT['duration:'] + ' ' + minutes_to_time(duration)
+        if 0 < duration < 1440:
+            self.label['text'] = TEXT['duration:'] + ' ' + minutes_to_duration(duration)
         elif duration == 0:
             self.label['text'] = TEXT['duration:'] + ' ' + TEXT['instant']
+        elif duration >= 1440:
+            self.label['text'] = TEXT['duration:'] + ' ' + TEXT['too_long']
         else:
             self.label['text'] = TEXT['duration:'] + ' ' + TEXT['negative']
 
@@ -1057,7 +1072,13 @@ def squeeze_activities_weight(activities: dict) -> dict:
 
 def minutes_to_time(minutes: int) -> str:
     """Converts minutes to format hh:mm"""
-    return f'{minutes//60:0>2}:{minutes%60:0>2}'
+    return f'{(minutes // 60 ) % 24:0>2}:{minutes % 60:0>2}'
+    #  %24 is to replace 31:00 with 07:00 of the next day
+
+
+def minutes_to_duration(minutes: int) -> str:
+    """Converts minutes to format hh:mm, but not replaces 31:00 with 07:00"""
+    return f'{minutes // 60:0>2}:{minutes % 60:0>2}'
 
 
 def time_to_minutes(time: str) -> int:
@@ -1083,6 +1104,8 @@ def create_work_block_or_paragraph_dict_by_string(string: str) -> dict:
     if list_of_words[0] == '-':
         dictionary['end'] = time_to_minutes(list_of_words[1])
         list_of_words = list_of_words[2:]  # Removing '-' and end time
+        if dictionary['end'] < dictionary['start']:
+            dictionary['end'] += 1440
     else:
         dictionary['end'] = dictionary['start']
     if TEXT['work_block'] in string:

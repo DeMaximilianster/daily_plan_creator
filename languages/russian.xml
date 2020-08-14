@@ -54,5 +54,8 @@
     <string key="scrollbars">Колёса прокрутки</string>
     <string key="show">Показать</string>
     <string key="hide">Спрятать</string>
+    <string key="after_midnight">после полуночи</string>
+    <string key="too_long">слишком долгая</string>
+    <string key="too_long_error">Длительность должна быть меньше 24 часов</string>
 
 </strings>

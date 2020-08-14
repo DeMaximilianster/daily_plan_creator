@@ -54,5 +54,8 @@
     <string key="scrollbars">Scrollbars</string>
     <string key="show">Show</string>
     <string key="hide">Hide</string>
+    <string key="after_midnight">after midnight</string>
+    <string key="too_long">too long</string>
+    <string key="too_long_error">Duration must be less than 24 hours</string>
 
 </strings>
