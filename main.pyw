@@ -198,12 +198,12 @@ class Main:
         for routine in sequence:
             minutes_of_work -= routine['duration']
         while minutes_of_work >= min_time:
+            name = TEXT["work_cycle"]
             if activities:
                 activity = choose_one_activity(activities)["name"]
-            else:
-                activity = TEXT['any_activity']
+                name += ' [{}]'.format(activity)
             time_block = choice(range(min_time, min(max_time, minutes_of_work) + 1, 5))
-            sequence.append({'name': TEXT["work_cycle"].format(activity), 'duration': time_block})
+            sequence.append({'name': name, 'duration': time_block})
             minutes_of_work -= time_block
         minutes_of_rest += minutes_of_work
         shuffle(sequence)

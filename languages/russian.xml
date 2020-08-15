@@ -7,8 +7,7 @@
     <string key="create_plan">Вперёд!</string>
     <string key="failed_to_create">Не удалось создать расписание так как дела не вписываются в блоки работы</string>
     <string key="pleasure_forbidden">Удовольствие [{}] запрещено</string>
-    <string key="any_activity">Любое занятие</string>
-    <string key="work_cycle">Цикл работы [{}]</string>
+    <string key="work_cycle">Цикл работы</string>
     <string key="rest">Отдых</string>
     <string key="redact">Редактировать</string>
     <string key="delete">Удалить</string>
